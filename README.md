@@ -27,6 +27,7 @@ Follow hints and adjust your guesses
 First correct guess wins 🎉
 
 🛠️ Tech Stack
+
 🎨 Frontend
 React (TypeScript) — Component-based UI development
 Vite — Fast build tool and development server
