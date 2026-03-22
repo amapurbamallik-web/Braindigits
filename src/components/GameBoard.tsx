@@ -1,0 +1,244 @@
+import { useState } from "react";
+import { GameState } from "@/lib/game-types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut } from "lucide-react";
+
+interface GameBoardProps {
+  gameState: GameState;
+  playerId: string;
+  isMyTurn: boolean;
+  onGuess: (guess: number) => void;
+  onRestart: () => void;
+  onLeave: () => void;
+  isHost: boolean;
+}
+
+export function GameBoard({
+  gameState,
+  playerId,
+  isMyTurn,
+  onGuess,
+  onRestart,
+  onLeave,
+  isHost,
+}: GameBoardProps) {
+  const [guessInput, setGuessInput] = useState("");
+  const [inputError, setInputError] = useState("");
+
+  const myPlayer = gameState.players.find((p) => p.id === playerId);
+  const currentTurnPlayer = gameState.players[gameState.currentTurnIndex];
+  const winner = gameState.winnerId
+    ? gameState.players.find((p) => p.id === gameState.winnerId)
+    : null;
+
+  const handleSubmitGuess = () => {
+    const num = parseInt(guessInput, 10);
+    if (isNaN(num) || num < gameState.minRange || num > gameState.maxRange) {
+      setInputError(`Enter a number between ${gameState.minRange} and ${gameState.maxRange}`);
+      return;
+    }
+    setInputError("");
+    onGuess(num);
+    setGuessInput("");
+  };
+
+  // Winner screen
+  if (gameState.status === "finished" && winner) {
+    const isMe = winner.id === playerId;
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
+        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
+              <Trophy className="h-10 w-10 text-game-amber" />
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {isMe ? "You won!" : `${winner.name} wins!`}
+            </h2>
+            <p className="text-muted-foreground mt-2">
+              Guessed correctly in {winner.attempts} attempt{winner.attempts !== 1 ? "s" : ""}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              The number was{" "}
+              <span className="font-mono font-bold text-game-cyan">{gameState.targetNumber}</span>
+            </p>
+          </div>
+
+          <div className="bg-card rounded-xl p-5 shadow-sm mb-6 border border-border/50">
+            <p className="text-sm font-medium text-muted-foreground mb-3">Leaderboard</p>
+            <div className="space-y-2">
+              {[...gameState.players]
+                .sort((a, b) => b.score - a.score)
+                .map((player, i) => (
+                  <div
+                    key={player.id}
+                    className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
+                      player.id === winner.id ? "bg-game-cyan/10 border border-game-cyan/20" : "bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-mono text-muted-foreground w-5">#{i + 1}</span>
+                      <span className="font-medium">{player.name}</span>
+                    </div>
+                    <span className="font-mono font-bold text-game-amber">{player.score} pts</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onLeave} className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50">
+              <LogOut className="h-4 w-4 mr-2" />
+              Leave
+            </Button>
+            {isHost && (
+              <Button onClick={onRestart} className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Play Again
+              </Button>
+            )}
+          </div>
+          {!isHost && (
+            <p className="text-sm text-muted-foreground mt-4">Waiting for host to restart…</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Game in progress
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            Round {gameState.round} · Room {gameState.roomCode}
+          </p>
+          <p className="text-lg font-semibold">
+            Guess between{" "}
+            <span className="font-mono text-game-cyan">{gameState.minRange}</span>
+            {" – "}
+            <span className="font-mono text-game-cyan">{gameState.maxRange}</span>
+          </p>
+        </div>
+
+        {/* Turn indicator */}
+        <div
+          className={`rounded-xl p-4 mb-6 text-center transition-colors border ${
+            isMyTurn
+              ? "bg-game-cyan/10 border-game-cyan/30"
+              : "bg-muted/30 border-border/50"
+          }`}
+        >
+          <p className={`text-sm font-medium ${isMyTurn ? "text-game-cyan" : "text-muted-foreground"}`}>
+            {isMyTurn ? "⚡ Your turn!" : `${currentTurnPlayer?.name}'s turn`}
+          </p>
+        </div>
+
+        {/* My guesses (private) */}
+        {myPlayer && myPlayer.guesses.length > 0 && (
+          <div className="bg-card rounded-xl p-4 shadow-sm mb-4 border border-border/50 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Your guesses
+            </p>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {myPlayer.guesses.map((g, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm"
+                >
+                  <span className="font-mono font-medium">{g.value}</span>
+                  <span className="flex items-center gap-1 font-medium">
+                    {g.hint === "higher" && (
+                      <>
+                        <ArrowUp className="h-3.5 w-3.5 hint-higher" />
+                        <span className="hint-higher">Higher</span>
+                      </>
+                    )}
+                    {g.hint === "lower" && (
+                      <>
+                        <ArrowDown className="h-3.5 w-3.5 hint-lower" />
+                        <span className="hint-lower">Lower</span>
+                      </>
+                    )}
+                    {g.hint === "correct" && (
+                      <span className="hint-correct">✓ Correct!</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Player scores */}
+        <div className="bg-card rounded-xl p-4 shadow-sm mb-6 border border-border/50">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Players
+          </p>
+          <div className="space-y-1.5">
+            {gameState.players.map((player, i) => (
+              <div
+                key={player.id}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                  i === gameState.currentTurnIndex
+                    ? "bg-game-cyan/10 ring-1 ring-game-cyan/20"
+                    : "bg-muted/40"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {i === gameState.currentTurnIndex && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse-glow" />
+                  )}
+                  <span className={`font-medium ${player.id === playerId ? "text-game-cyan" : ""}`}>
+                    {player.name}
+                    {player.id === playerId && " (you)"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <span className="text-xs">{player.attempts} guesses</span>
+                  <span className="font-mono font-bold text-game-amber text-xs">
+                    {player.score}pts
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Input */}
+        {isMyTurn && (
+          <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={gameState.minRange}
+                max={gameState.maxRange}
+                placeholder="Your guess"
+                value={guessInput}
+                onChange={(e) => {
+                  setGuessInput(e.target.value);
+                  setInputError("");
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmitGuess()}
+                className="h-12 text-base font-mono bg-card/50 border-border/50"
+                autoFocus
+              />
+              <Button
+                onClick={handleSubmitGuess}
+                className="h-12 px-6 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark"
+              >
+                Guess
+              </Button>
+            </div>
+            {inputError && (
+              <p className="text-sm text-destructive mt-2">{inputError}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
