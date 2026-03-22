@@ -32,13 +32,17 @@ React (TypeScript) — Component-based UI development
 Vite — Fast build tool and development server
 Tailwind CSS — Utility-first styling for modern UI
 CSS3 — Custom styling
+
 🧠 Backend / Realtime
 Supabase — Backend-as-a-Service (database + real-time features)
+
 🧪 Testing
 Playwright — End-to-end testing framework
+
 ⚙️ Tools & Configuration
 ESLint — Code linting and quality checks
 PostCSS — CSS processing
 Bun / npm — Package management
+
 🚀 Deployment
 Vercel — Hosting and deployment platform
