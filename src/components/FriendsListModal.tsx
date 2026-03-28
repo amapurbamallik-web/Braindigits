@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAudio } from "@/contexts/AudioContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FriendsListProps {
   open: boolean;
@@ -23,6 +24,7 @@ type FriendshipData = {
 export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) {
   const { user, profile } = useAuth();
   const { playSfx } = useAudio();
+  const queryClient = useQueryClient();
   const [friendships, setFriendships] = useState<FriendshipData[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -171,6 +173,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       
       // Quietly resync to get the real DB ID
       fetchFriends();
+      queryClient.invalidateQueries({ queryKey: ["pending-friend-requests"] });
     } catch (err: any) {
       // Revert optimistic update on hard error
       setFriendships(prev => prev.filter(f => f.id !== tempId));
@@ -196,6 +199,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         await (supabase as any).from("friendships").delete().eq("id", id);
         if (action === "cancel") toast.success("Request canceled.");
       }
+      queryClient.invalidateQueries({ queryKey: ["pending-friend-requests"] });
     } catch (err) {
       // Revert
       setFriendships(previous);
@@ -340,7 +344,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
               {friends.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">Active Friends</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">Your Friends</p>
                   <div className="space-y-2">
                     {friends.map(friend => (
                       <div key={friend.id} className="flex flex-col bg-black/30 rounded-xl border border-white/5 animate-in fade-in zoom-in-95 group overflow-hidden">

@@ -152,25 +152,30 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         {/* Right Side: Log Out & Sign In */}
         <div className="flex items-center gap-2 md:gap-4 pointer-events-auto">
           {user ? (
-            <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md px-3 md:px-5 py-2 rounded-full border border-game-cyan/20 shadow-[0_0_15px_rgba(0,229,255,0.1)]">
+            <div className="flex items-center gap-2 md:gap-3 bg-black/40 hover:bg-black/80 backdrop-blur-2xl px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 hover:border-game-cyan/30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all duration-300 group cursor-default">
               <button 
                 onClick={() => {
                   if (profile) setShowProfile(true);
                   else setShowAuth(true); // Prompts them to set username
                 }}
-                className="text-xs md:text-sm lg:text-base font-bold text-game-cyan hover:underline decoration-game-cyan underline-offset-4 max-w-[80px] xs:max-w-[120px] sm:max-w-[150px] truncate block text-left"
+                className="flex items-center gap-2 md:gap-2.5 text-xs md:text-sm lg:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-game-cyan to-blue-400 hover:from-white hover:to-game-cyan transition-all text-left truncate active:scale-95 max-w-[100px] xs:max-w-[130px] sm:max-w-[160px]"
               >
-                {profile?.username || (isLoading ? "..." : "Setup Profile")}
+                <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-game-cyan/10 border border-game-cyan/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <UserCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-game-cyan drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]" />
+                </div>
+                <span className="truncate group-hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.6)]">
+                  {profile?.username || (isLoading ? "..." : "SETUP")}
+                </span>
               </button>
-              <div className="w-px h-3 md:h-4 bg-white/20 mx-0.5 md:mx-1 shrink-0"></div>
+              <div className="w-px h-5 md:h-6 bg-white/10 mx-0.5 shrink-0 group-hover:bg-game-cyan/30 transition-colors"></div>
               <button 
                 onClick={async () => {
                   await logout();
                 }} 
-                className="text-muted-foreground hover:text-game-amber transition-colors" 
-                title="Logout"
+                className="p-1.5 md:p-2 rounded-full text-muted-foreground/70 hover:bg-red-500/15 hover:text-red-400 active:scale-90 transition-all focus:outline-none" 
+                title="Secure Logout"
               >
-                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
+                <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </button>
             </div>
           ) : (
