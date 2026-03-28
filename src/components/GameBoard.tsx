@@ -116,7 +116,7 @@ export function GameBoard({
           spread: 55,
           origin: { x: 0, y: 0.8 },
           colors: ['#00E5FF', '#FFB300', '#AB47BC'],
-          zIndex: 1000
+          zIndex: 0
         });
         confetti({
           particleCount: 6,
@@ -124,7 +124,7 @@ export function GameBoard({
           spread: 55,
           origin: { x: 1, y: 0.8 },
           colors: ['#00E5FF', '#FFB300', '#AB47BC'],
-          zIndex: 1000
+          zIndex: 0
         });
 
         if (Date.now() < end) {
@@ -159,8 +159,8 @@ export function GameBoard({
   if (gameState.status === "finished" && winner) {
     const isMe = winner.id === playerId;
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
-        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+      <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark relative overflow-hidden">
+        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up relative z-10" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
               <Trophy className="h-10 w-10 text-game-amber" />

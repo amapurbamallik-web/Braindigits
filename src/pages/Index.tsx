@@ -99,20 +99,20 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
-        <div className="max-w-md w-full p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.15)] text-center animate-in fade-in zoom-in duration-500 relative z-10">
-          <h2 className="text-4xl font-extrabold mb-4 tracking-tight text-white drop-shadow-md">Play with AI</h2>
-          <p className="text-game-purple/80 text-lg mb-8 font-medium">Enter your name to challenge the bot.</p>
+        <div className="max-w-md w-full p-6 md:p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.15)] text-center animate-in fade-in zoom-in duration-500 relative z-10">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-3 md:mb-4 tracking-tight text-white drop-shadow-md">Play with AI</h2>
+          <p className="text-game-purple/80 text-base md:text-lg mb-6 md:mb-8 font-medium">Enter your name to challenge the bot.</p>
           <input 
             type="text" 
             placeholder="Your name" 
-            className="w-full p-4 rounded-xl bg-background/80 border border-game-purple/30 mb-6 focus:ring-2 focus:ring-game-purple outline-none transition-all text-white text-lg placeholder:text-muted-foreground/50 text-center"
+            className="w-full p-3 md:p-4 rounded-xl bg-background/80 border border-game-purple/30 mb-6 focus:ring-2 focus:ring-game-purple outline-none transition-all text-white text-base md:text-lg placeholder:text-muted-foreground/50 text-center"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && setIsStarted(true)}
             autoFocus
           />
           <button 
-            className="w-full p-4 rounded-xl bg-game-purple hover:bg-game-purple/90 active:scale-[0.98] text-white font-bold text-lg transition-all shadow-[0_0_20px_rgba(171,71,188,0.4)]"
+            className="w-full p-3 md:p-4 rounded-xl bg-game-purple hover:bg-game-purple/90 active:scale-[0.98] text-white font-bold text-base md:text-lg transition-all shadow-[0_0_20px_rgba(171,71,188,0.4)]"
             onClick={() => setIsStarted(true)}
           >
             Start Match
