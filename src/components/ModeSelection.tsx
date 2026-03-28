@@ -78,7 +78,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             alt="BrainDigits Logo"
             className="w-48 h-48 md:w-64 md:h-64 mb-6 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.2)]"
           />
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2 tracking-tight">BrainDigits</h1>
+          <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-game-cyan via-white to-game-purple drop-shadow-[0_0_15px_rgba(0,229,255,0.4)] uppercase">BrainDigits</h1>
           <p className="text-sm md:text-base text-muted-foreground mb-8 text-center px-4">Login to track your stats or play instantly.</p>
 
           <div className="w-full space-y-4 px-4 md:px-6 relative">

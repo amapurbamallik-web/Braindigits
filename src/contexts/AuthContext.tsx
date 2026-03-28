@@ -150,6 +150,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ]);
     } catch (error) {
       console.error("Error signing out:", error);
+    } finally {
+      // Force clear the underlying storage token to prevent "Setup Profile" zombie session on refresh
+      localStorage.removeItem("braindigits-auth-v4");
+      localStorage.removeItem("braindigits_profile");
     }
   };
 
