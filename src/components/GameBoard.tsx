@@ -99,11 +99,17 @@ export function GameBoard({
     : null;
 
   useEffect(() => {
+    let isActive = true;
+    let timeoutId: NodeJS.Timeout;
+    let animationFrameId: number;
+
     if (gameState.status === "finished" && winner && winner.id === playerId) {
       const duration = 3000;
       const end = Date.now() + duration;
 
       const frame = () => {
+        if (!isActive) return;
+
         confetti({
           particleCount: 6,
           angle: 60,
@@ -122,12 +128,20 @@ export function GameBoard({
         });
 
         if (Date.now() < end) {
-          requestAnimationFrame(frame);
+          animationFrameId = requestAnimationFrame(frame);
         }
       };
       
-      setTimeout(frame, 200);
+      timeoutId = setTimeout(frame, 200);
     }
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      // Immediately clear particles from screen on state change
+      confetti.reset();
+    };
   }, [gameState.status, winner?.id, playerId]);
 
   const handleSubmitGuess = () => {
