@@ -154,6 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Force clear the underlying storage token to prevent "Setup Profile" zombie session on refresh
       localStorage.removeItem("braindigits-auth-v4");
       localStorage.removeItem("braindigits_profile");
+      // Bulletproof redirect to clean state (Splash Screen) and clear all in-memory ghosts
+      window.location.href = "/";
     }
   };
 

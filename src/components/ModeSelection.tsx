@@ -163,7 +163,6 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
               <button 
                 onClick={async () => {
                   await logout();
-                  setIsGuest(true);
                 }} 
                 className="text-muted-foreground hover:text-game-amber transition-colors" 
                 title="Logout"
@@ -306,7 +305,6 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         profile={profile}
         onLogout={async () => {
           await logout();
-          setIsGuest(true);
           setShowProfile(false);
         }}
       />
