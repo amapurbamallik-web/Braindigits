@@ -11,30 +11,48 @@ interface LeaderboardModalProps {
 export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const [tab, setTab] = useState<"pvp" | "ai">("pvp");
   const [leaders, setLeaders] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Fix: start false, not true
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    // Reset state cleanly whenever modal closes
+    if (!open) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
     const fetchLeaders = async () => {
       setLoading(true);
+      setError(null);
+
+      // Safety timeout — prevents infinite spinner if Supabase hangs
+      const timeoutId = setTimeout(() => {
+        setLoading(false);
+        setError("Request timed out. Check your connection and try again.");
+      }, 10000);
+
       try {
         const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
         
-        // Use any cast to avoid type errors since 'profiles' isn't explicitly typed yet
-        const { data, error } = await (supabase as any)
+        const { data, error: fetchError } = await (supabase as any)
           .from("profiles")
           .select("id, username, total_wins, ai_wins, total_games")
           .order(orderColumn, { ascending: false })
           .limit(50);
 
-        if (error) {
-          console.error("Error fetching leaderboard:", error);
+        clearTimeout(timeoutId);
+
+        if (fetchError) {
+          console.error("Error fetching leaderboard:", fetchError);
+          setError("Could not load leaderboard. Please try again.");
         } else {
           setLeaders(data || []);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error(err);
+        setError("An unexpected error occurred.");
       } finally {
         setLoading(false);
       }
@@ -87,8 +105,25 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
         {/* List */}
         <div className="flex-1 overflow-y-auto pr-2 space-y-2">
           {loading ? (
-            <div className="flex items-center justify-center h-40">
+            <div className="flex flex-col items-center justify-center h-40 gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-game-cyan"></div>
+              <p className="text-xs text-muted-foreground animate-pulse">Fetching champions...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-40 gap-4 text-center">
+              <p className="text-red-400 text-sm font-medium">{error}</p>
+              <button
+                onClick={() => {
+                  // Re-trigger by toggling tab then back (force re-effect)
+                  setLeaders([]);
+                  const currentTab = tab;
+                  setTab(currentTab === "pvp" ? "ai" : "pvp");
+                  setTimeout(() => setTab(currentTab), 50);
+                }}
+                className="px-4 py-2 rounded-xl bg-game-cyan/10 hover:bg-game-cyan/20 border border-game-cyan/30 text-game-cyan text-sm font-bold transition-all active:scale-95"
+              >
+                Retry
+              </button>
             </div>
           ) : leaders.length === 0 ? (
             <div className="text-center text-muted-foreground py-10">

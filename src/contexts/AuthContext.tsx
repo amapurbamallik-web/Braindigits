@@ -9,6 +9,7 @@ export interface UserProfile {
   total_wins: number;
   total_games: number;
   ai_wins: number;
+  avatar_url?: string;
   created_at?: string;
 }
 

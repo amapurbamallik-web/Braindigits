@@ -155,8 +155,12 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             <div className="flex items-center gap-2 md:gap-3 bg-black/40 hover:bg-black/80 backdrop-blur-2xl px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 hover:border-game-cyan/30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all duration-300 group cursor-default">
               <button 
                 onClick={() => {
-                  if (profile) setShowProfile(true);
-                  else setShowAuth(true); // Prompts them to set username
+                  if (profile) {
+                    playSfx('expand');
+                    setShowProfile(true);
+                  } else {
+                    setShowAuth(true);
+                  }
                 }}
                 className="flex items-center gap-2 md:gap-2.5 text-xs md:text-sm lg:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-game-cyan to-blue-400 hover:from-white hover:to-game-cyan transition-all text-left truncate active:scale-95 max-w-[100px] xs:max-w-[130px] sm:max-w-[160px]"
               >

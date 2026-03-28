@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     total_wins INTEGER DEFAULT 0 NOT NULL,
     total_games INTEGER DEFAULT 0 NOT NULL,
     ai_wins INTEGER DEFAULT 0 NOT NULL,
+    avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
