@@ -115,10 +115,10 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
       <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-game-amber/5 rounded-full blur-[120px] pointer-events-none" />
       
       {/* Top Navbar */}
-      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
-        <GlobalLogo className="hidden md:flex pointer-events-auto" />
+      <div className="w-full flex justify-between items-center z-20 shrink-0 mb-4 px-2 md:px-0">
         
-        <div className="flex items-center gap-2 md:gap-4 ml-auto pointer-events-auto">
+        {/* Left Side: Friends and Leaderboard */}
+        <div className="flex items-center gap-2 md:gap-4 pointer-events-auto">
           {user && (
             <div className="relative">
               <Button
@@ -147,7 +147,10 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           >
             <Trophy className="h-5 w-5 md:h-5 md:w-5" />
           </Button>
+        </div>
 
+        {/* Right Side: Log Out & Sign In */}
+        <div className="flex items-center gap-2 md:gap-4 pointer-events-auto">
           {user ? (
             <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md px-3 md:px-5 py-2 rounded-full border border-game-cyan/20 shadow-[0_0_15px_rgba(0,229,255,0.1)]">
               <button 
