@@ -76,7 +76,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           <img
             src={logoImg}
             alt="BrainDigits Logo"
-            className="w-48 h-48 md:w-64 md:h-64 mb-6 drop-shadow-[0_0_30px_rgba(0,229,255,0.2)]"
+            className="w-48 h-48 md:w-64 md:h-64 mb-6 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.2)]"
           />
           <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2 tracking-tight">BrainDigits</h1>
           <p className="text-sm md:text-base text-muted-foreground mb-8 text-center px-4">Login to track your stats or play instantly.</p>
@@ -192,7 +192,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           <img
             src={logoImg}
             alt="BrainDigits Logo"
-            className="w-56 h-56 mx-auto mb-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.15)] hover:scale-105 transition-transform duration-500"
+            className="w-56 h-56 mx-auto mb-4 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.15)] hover:scale-105 transition-transform duration-500"
           />
           <p className="text-muted-foreground font-medium" style={{ textWrap: "pretty" }}>
             Compete with friends or challenge the AI offline. The fastest mind wins!

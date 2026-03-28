@@ -142,7 +142,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="relative z-10 flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-game-purple via-game-cyan to-transparent p-[1px] mb-4 shadow-xl">
             <div className="w-full h-full rounded-2xl bg-game-dark flex items-center justify-center">
-              <img src={logoImg} alt="BrainDigits Logo" className="w-9 h-9 object-contain drop-shadow-[0_0_10px_rgba(0,229,255,0.6)] hover:scale-110 transition-transform" />
+              <img src={logoImg} alt="BrainDigits Logo" className="w-9 h-9 object-contain -translate-x-0.5 md:-translate-x-1 drop-shadow-[0_0_10px_rgba(0,229,255,0.6)] hover:scale-110 transition-transform" />
             </div>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">

@@ -95,7 +95,7 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
           <img
             src={logoImg}
             alt="BrainDigits - Multiplayer Number Guessing Arena"
-            className="w-56 h-56 mx-auto mb-4 drop-shadow-2xl"
+            className="w-56 h-56 mx-auto mb-4 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-2xl"
           />
           <p className="text-muted-foreground text-sm" style={{ textWrap: "pretty" }}>
             Compete with friends to guess the hidden number. Fastest mind wins.
