@@ -33,7 +33,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className }) => {
       <audio
         ref={audioRef}
         loop
-        src="https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/soundtrack.mp3"
+        src="https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/menu.ogg"
       />
       <Button
         variant="secondary"
