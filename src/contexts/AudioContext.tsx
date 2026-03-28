@@ -23,7 +23,7 @@ const getAudioContext = () => {
 };
 
 // A bulletproof internal synthesizer that requires NO external downloads or network
-const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1) => {
+const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, delaySec = 0) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -35,18 +35,20 @@ const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1) =>
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
+    const startTime = ctx.currentTime + delaySec;
+
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.frequency.setValueAtTime(freq, startTime);
     
     // Envelope to prevent clipping/clicking
-    gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + dur);
+    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, startTime + dur);
     
     osc.connect(gain);
     gain.connect(ctx.destination);
     
-    osc.start();
-    osc.stop(ctx.currentTime + dur);
+    osc.start(startTime);
+    osc.stop(startTime + dur);
   } catch(e) {
     console.warn("Audio Context failed", e);
   }
@@ -68,7 +70,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       case 'join':
         // Two-tone pop
         playTone(440, 'sine', 0.1, 0.8);
-        setTimeout(() => playTone(660, 'sine', 0.15, 1.0), 100);
+        playTone(660, 'sine', 0.15, 1.0, 0.1);
         break;
       case 'guess_local':
         // Minimal tick
@@ -77,12 +79,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       case 'guess_opponent':
         // Arcade blip
         playTone(400, 'square', 0.1, 0.6);
-        setTimeout(() => playTone(600, 'square', 0.1, 0.6), 80);
+        playTone(600, 'square', 0.1, 0.6, 0.08);
         break;
       case 'win':
         // Success arpeggio
         [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-          setTimeout(() => playTone(freq, 'square', 0.25, i === 3 ? 1.0 : 0.6), i * 120);
+          playTone(freq, 'square', 0.25, i === 3 ? 1.0 : 0.6, i * 0.12);
         });
         break;
       case 'tick':
