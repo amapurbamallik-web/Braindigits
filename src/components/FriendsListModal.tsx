@@ -41,10 +41,12 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
     setLoading(true);
     setFetchError(null);
 
+    let timedOut = false;
     const timeoutId = setTimeout(() => {
+      timedOut = true;
       setLoading(false);
       setFetchError("Request timed out. Check your connection.");
-    }, 10000);
+    }, 15000);
 
     try {
       const { data: rels, error: relsError } = await (supabase as any)
@@ -52,12 +54,12 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         .select("*")
         .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
-      clearTimeout(timeoutId);
+      if (timedOut) return; // Timeout already fired, discard result
       if (relsError) throw relsError;
 
       if (!rels || rels.length === 0) {
         setFriendships([]);
-        return;
+        return; // finally will still run and clear loading
       }
 
       const friendIds = rels.map((r: any) => r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1);
@@ -67,6 +69,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         .select("id, username, total_wins, total_games, ai_wins")
         .in("id", friendIds);
 
+      if (timedOut) return;
       if (profError) throw profError;
 
       const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
@@ -80,11 +83,13 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
       setFriendships(merged);
     } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.error("Error fetching friends:", err);
-      setFetchError("Failed to load friends. Tap to retry.");
+      if (!timedOut) {
+        console.error("Error fetching friends:", err);
+        setFetchError("Failed to load friends. Tap to retry.");
+      }
     } finally {
-      setLoading(false);
+      clearTimeout(timeoutId); // Always clear, even if timeout fired first
+      if (!timedOut) setLoading(false);
     }
   };
 

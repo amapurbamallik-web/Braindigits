@@ -144,10 +144,14 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
                     <Camera className="w-5 h-5 text-white" />
                 </div>
               </button>
-              {/* Pencil badge — always visible edit indicator */}
-              <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md pointer-events-none`}>
+              {/* Pencil badge — clickable edit indicator */}
+              <button
+                onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
+                className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md hover:scale-125 active:scale-95 transition-transform`}
+                title="Change avatar"
+              >
                 <Pencil className={`w-3 h-3 ${rank.color}`} />
-              </div>
+              </button>
             </div>
           </div>
         </div>

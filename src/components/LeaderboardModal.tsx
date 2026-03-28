@@ -26,11 +26,12 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
       setLoading(true);
       setError(null);
 
-      // Safety timeout — prevents infinite spinner if Supabase hangs
+      let timedOut = false;
       const timeoutId = setTimeout(() => {
+        timedOut = true;
         setLoading(false);
         setError("Request timed out. Check your connection and try again.");
-      }, 10000);
+      }, 15000);
 
       try {
         const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
@@ -41,7 +42,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
           .order(orderColumn, { ascending: false })
           .limit(50);
 
-        clearTimeout(timeoutId);
+        if (timedOut) return; // Discard if timeout already fired
 
         if (fetchError) {
           console.error("Error fetching leaderboard:", fetchError);
@@ -50,11 +51,13 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
           setLeaders(data || []);
         }
       } catch (err) {
-        clearTimeout(timeoutId);
-        console.error(err);
-        setError("An unexpected error occurred.");
+        if (!timedOut) {
+          console.error(err);
+          setError("An unexpected error occurred.");
+        }
       } finally {
-        setLoading(false);
+        clearTimeout(timeoutId);
+        if (!timedOut) setLoading(false);
       }
     };
 
