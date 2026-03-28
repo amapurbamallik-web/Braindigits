@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Bot, HelpCircle, X, Settings2, Volume2, VolumeX } from "lucide-react";
+import { Users, Bot, HelpCircle, X, Settings2, Volume2, VolumeX, Instagram, Linkedin, Facebook, Twitter, Github, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import logoImg from "@/assets/brain-digits-logo.png";
@@ -16,6 +16,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [customRangeInput, setCustomRangeInput] = useState("");
+  const [customTimerInput, setCustomTimerInput] = useState("");
   const { isSoundEnabled, toggleSound } = useAudio();
 
   return (
@@ -201,20 +202,50 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
                   </div>
                   
                   {settings.timerEnabled && (
-                    <div className="pt-2 flex gap-2">
-                      {[10000, 15000, 30000].map(duration => (
-                        <button
-                          key={duration}
-                          onClick={() => onSettingsChange({ ...settings, timerDuration: duration })}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                            settings.timerDuration === duration 
-                              ? 'bg-game-purple/20 border-game-purple text-game-purple' 
-                              : 'bg-black/40 border-transparent text-muted-foreground hover:bg-black/60'
-                          }`}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        {![10000, 15000, 30000].includes(settings.timerDuration ?? 15000) && (
+                          <span className="text-xs font-bold text-game-purple bg-game-purple/10 px-2 py-0.5 rounded-full border border-game-purple/20 block ml-auto">
+                            Custom: {(settings.timerDuration ?? 15000) / 1000}s
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[10000, 15000, 30000].map(duration => (
+                          <button
+                            key={duration}
+                            onClick={() => onSettingsChange({ ...settings, timerDuration: duration })}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                              settings.timerDuration === duration 
+                                ? 'bg-game-purple/20 border-game-purple text-game-purple shadow-[0_0_10px_rgba(171,71,188,0.2)]' 
+                                : 'bg-black/30 border-transparent text-muted-foreground hover:bg-black/50'
+                            }`}
+                          >
+                            {duration / 1000}s
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 relative mt-2">
+                        <Input
+                          type="number"
+                          placeholder="Custom Time (secs)"
+                          value={customTimerInput}
+                          onChange={(e) => setCustomTimerInput(e.target.value)}
+                          className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-game-purple/50 text-white placeholder:text-muted-foreground/50"
+                        />
+                        <Button 
+                          onClick={() => {
+                            const val = parseInt(customTimerInput);
+                            if (!isNaN(val) && val >= 5) {
+                              onSettingsChange({ ...settings, timerDuration: val * 1000 });
+                              setCustomTimerInput("");
+                            }
+                          }}
+                          className="h-10 px-4 bg-game-purple hover:bg-game-purple/90 text-white font-bold transition-transform active:scale-95"
                         >
-                          {duration / 1000}s
-                        </button>
-                      ))}
+                          Set
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -246,6 +277,33 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             </div>
           </div>
         )}
+      </div>
+
+      {/* Developer Footer */}
+      <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+        <p className="text-xs text-muted-foreground font-medium tracking-wide">
+          Developed by <span className="text-game-cyan font-bold">Apurba Mallik</span>
+        </p>
+        <div className="flex items-center gap-4 text-muted-foreground">
+          <a href="https://github.com/apurbamallik" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="GitHub">
+            <Github className="w-4 h-4" />
+          </a>
+          <a href="https://x.com/_apurbamallik" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="X (Twitter)">
+            <Twitter className="w-4 h-4" />
+          </a>
+          <a href="https://www.linkedin.com/in/apurbamallik/" target="_blank" rel="noopener noreferrer" className="hover:text-[#0A66C2] transition-colors" title="LinkedIn">
+            <Linkedin className="w-4 h-4" />
+          </a>
+          <a href="https://instagram.com/_.amallik" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors" title="Instagram">
+            <Instagram className="w-4 h-4" />
+          </a>
+          <a href="https://www.facebook.com/apurbamallikjgm" target="_blank" rel="noopener noreferrer" className="hover:text-[#1877F2] transition-colors" title="Facebook">
+            <Facebook className="w-4 h-4" />
+          </a>
+          <a href="mailto:am.apurbamallik@gmail.com" className="hover:text-game-cyan transition-colors" title="Email">
+            <Mail className="w-4 h-4" />
+          </a>
+        </div>
       </div>
     </div>
   );

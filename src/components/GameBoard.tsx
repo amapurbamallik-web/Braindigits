@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
+import confetti from "canvas-confetti";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -15,15 +16,15 @@ interface GameBoardProps {
   isHost: boolean;
 }
 
-const TurnTimer = ({ deadline, isActive }: { deadline?: number, isActive: boolean }) => {
-  const [timeLeft, setTimeLeft] = useState(15000);
+const TurnTimer = ({ deadline, isActive, duration }: { deadline?: number, isActive: boolean, duration: number }) => {
+  const [timeLeft, setTimeLeft] = useState(duration);
   const { playSfx } = useAudio();
   const lastTickRef = useRef<number>(-1);
   const hasPlayedTimeoutRef = useRef(false);
   
   useEffect(() => {
     if (!deadline || !isActive) {
-      setTimeLeft(15000);
+      setTimeLeft(duration);
       lastTickRef.current = -1;
       hasPlayedTimeoutRef.current = false;
       return;
@@ -53,7 +54,7 @@ const TurnTimer = ({ deadline, isActive }: { deadline?: number, isActive: boolea
     return () => cancelAnimationFrame(animationFrameId);
   }, [deadline, isActive, playSfx]);
 
-  const percentage = Math.max(0, Math.min(100, (timeLeft / 15000) * 100));
+  const percentage = Math.max(0, Math.min(100, (timeLeft / duration) * 100));
   const isCritical = timeLeft < 5000 && isActive && timeLeft > 0;
   const secondsLeft = Math.ceil(timeLeft / 1000);
 
@@ -96,6 +97,38 @@ export function GameBoard({
   const winner = gameState.winnerId
     ? gameState.players.find((p) => p.id === gameState.winnerId)
     : null;
+
+  useEffect(() => {
+    if (gameState.status === "finished" && winner && winner.id === playerId) {
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 6,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.8 },
+          colors: ['#00E5FF', '#FFB300', '#AB47BC'],
+          zIndex: 1000
+        });
+        confetti({
+          particleCount: 6,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.8 },
+          colors: ['#00E5FF', '#FFB300', '#AB47BC'],
+          zIndex: 1000
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      
+      setTimeout(frame, 200);
+    }
+  }, [gameState.status, winner?.id, playerId]);
 
   const handleSubmitGuess = () => {
     const num = parseInt(guessInput, 10);
@@ -201,7 +234,7 @@ export function GameBoard({
             {isMyTurn ? "⚡ YOUR TURN!" : `${currentTurnPlayer?.name.toUpperCase()}'S TURN`}
           </p>
           {gameState.timerEnabled !== false && (
-            <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} />
+            <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} duration={gameState.timerDuration ?? 15000} />
           )}
         </div>
 

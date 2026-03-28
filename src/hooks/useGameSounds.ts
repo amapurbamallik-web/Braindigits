@@ -43,9 +43,13 @@ export function useGameSounds(gameState: GameState | null, playerId: string) {
         }
       }
 
-      // 3. Win Sound
+      // 3. Win/Lose Sound
       if (gameState.status === 'finished' && prev.status !== 'finished') {
-        playSfx('win');
+        if (gameState.winnerId === playerId) {
+          playSfx('win');
+        } else {
+          playSfx('timeout');
+        }
       }
     }
 
