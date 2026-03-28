@@ -70,7 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Retry loop for potential lock starvation or network blips (8 retries = ~4 seconds)
     for (let i = 0; i < 8; i++) {
       try {
-        const { data, error } = await (supabase as any).from("profiles").select("*").eq("id", userId).single();
+        // Select explicit columns — tolerates missing columns like avatar_url before migration
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("id, username, total_wins, total_games, ai_wins, avatar_url, created_at")
+          .eq("id", userId)
+          .single();
         
         if (error) {
           if (error.code === 'PGRST116') {

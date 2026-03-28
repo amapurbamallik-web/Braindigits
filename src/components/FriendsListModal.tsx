@@ -59,7 +59,9 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
       if (!rels || rels.length === 0) {
         setFriendships([]);
-        return; // finally will still run and clear loading
+        setLoading(false); // Explicitly clear loading on early return
+        clearTimeout(timeoutId);
+        return;
       }
 
       const friendIds = rels.map((r: any) => r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1);
