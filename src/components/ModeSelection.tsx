@@ -63,20 +63,25 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
 
   if (!shouldShowMenu) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-game-dark overflow-hidden relative">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-between p-4 md:p-6 bg-game-dark overflow-y-auto relative">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-game-cyan/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-game-purple/10 rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="w-full max-w-md flex flex-col items-center z-10 animate-fade-in-up">
+        {/* Placeholder for top spacing */}
+        <div className="w-full flex justify-end md:justify-between z-20 shrink-0 mb-4">
+           <GlobalLogo className="hidden md:flex opacity-0" />
+        </div>
+
+        <div className="w-full max-w-md flex flex-col items-center z-10 animate-fade-in-up shrink-0 my-auto py-8">
           <img
             src={logoImg}
             alt="BrainDigits Logo"
-            className="w-64 h-64 mb-6 drop-shadow-[0_0_30px_rgba(0,229,255,0.2)]"
+            className="w-48 h-48 md:w-64 md:h-64 mb-6 drop-shadow-[0_0_30px_rgba(0,229,255,0.2)]"
           />
-          <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">BrainDigits</h1>
-          <p className="text-muted-foreground mb-10 text-center">Login to track your stats or play instantly.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2 tracking-tight">BrainDigits</h1>
+          <p className="text-sm md:text-base text-muted-foreground mb-8 text-center px-4">Login to track your stats or play instantly.</p>
 
-          <div className="w-full space-y-4 px-6 relative">
+          <div className="w-full space-y-4 px-4 md:px-6 relative">
             <Button
               onClick={() => setShowAuth(true)}
               className="w-full h-14 text-lg font-bold bg-game-cyan hover:bg-game-cyan/90 text-game-dark shadow-[0_0_20px_rgba(0,229,255,0.3)] rounded-2xl transition-all active:scale-[0.98]"
@@ -100,17 +105,17 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           onClose={() => setShowAuth(false)}
         />
 
-        <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100 animate-fade-in-up" />
+        <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100 animate-fade-in-up" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark relative">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-between p-4 md:p-6 bg-game-dark relative overflow-y-auto overflow-x-hidden">
       <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-game-amber/5 rounded-full blur-[120px] pointer-events-none" />
       
       {/* Top Navbar */}
-      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
         <GlobalLogo className="hidden md:flex pointer-events-auto" />
         
         <div className="flex items-center gap-2 md:gap-4 ml-auto pointer-events-auto">
@@ -150,11 +155,11 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
                   if (profile) setShowProfile(true);
                   else setShowAuth(true); // Prompts them to set username
                 }}
-                className="text-sm md:text-base font-bold text-game-cyan hover:underline decoration-game-cyan underline-offset-4"
+                className="text-xs md:text-sm lg:text-base font-bold text-game-cyan hover:underline decoration-game-cyan underline-offset-4 max-w-[80px] xs:max-w-[120px] sm:max-w-[150px] truncate block text-left"
               >
-                {profile?.username || (isLoading ? "Loading..." : "Complete Profile")}
+                {profile?.username || (isLoading ? "..." : "Setup Profile")}
               </button>
-              <div className="w-px h-4 bg-white/20 mx-1"></div>
+              <div className="w-px h-3 md:h-4 bg-white/20 mx-0.5 md:mx-1 shrink-0"></div>
               <button 
                 onClick={async () => {
                   await logout();
@@ -179,11 +184,11 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         </div>
       </div>
       <div 
-        className="w-full max-w-md opacity-0 animate-fade-in-up mt-16 md:mt-0"
+        className="w-full max-w-md opacity-0 animate-fade-in-up shrink-0 my-auto py-6"
         style={{ animationDelay: "0.1s" }}
       >
         {/* Logo Section */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 md:mb-8">
           <img
             src={logoImg}
             alt="BrainDigits Logo"
@@ -214,22 +219,22 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             Play with AI
           </Button>
 
-          <div className="pt-2 flex gap-3">
+          <div className="pt-1 flex gap-2 md:gap-3">
             <Button
               onClick={() => setShowInstructions(true)}
               variant="ghost"
-              className="flex-1 h-12 text-sm text-muted-foreground hover:text-game-amber hover:bg-game-amber/10"
+              className="flex-1 h-11 md:h-12 text-xs md:text-sm text-muted-foreground hover:text-game-amber hover:bg-game-amber/10 px-2"
             >
-              <HelpCircle className="h-4 w-4 mr-2" />
+              <HelpCircle className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
               How to Play
             </Button>
             
             <Button
               onClick={() => setShowSettings(true)}
               variant="ghost"
-              className="flex-1 h-12 text-sm text-muted-foreground hover:text-white hover:bg-white/10"
+              className="flex-1 h-11 md:h-12 text-xs md:text-sm text-muted-foreground hover:text-white hover:bg-white/10 px-2"
             >
-              <Settings2 className="h-4 w-4 mr-2" />
+              <Settings2 className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
               Settings
             </Button>
           </div>
@@ -287,7 +292,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
 
       </div>
 
-      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-0 animate-fade-in-up" />
+      <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-70 hover:opacity-100 transition-opacity animate-fade-in-up" />
 
       {/* ALL MODALS MUST BE AT ROOT LEVEL TO AVOID Z-INDEX TRAPS */}
       <AuthModal 

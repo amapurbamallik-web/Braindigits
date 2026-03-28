@@ -166,11 +166,11 @@ export function GameBoard({
   if (gameState.status === "finished" && winner) {
     const isMe = winner.id === playerId;
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+      <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
+        <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
           <GlobalLogo className="hidden md:flex pointer-events-auto" />
         </div>
-        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up relative z-10 my-16" style={{ animationDelay: "0.1s" }}>
+        <div className="w-full max-w-md text-center shrink-0 opacity-0 animate-fade-in-up relative z-10 my-auto py-6" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
               <Trophy className="h-10 w-10 text-game-amber" />
@@ -243,18 +243,18 @@ export function GameBoard({
             readOnly={!isHost}
           />
         </div>
-        <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100" />
+        <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
       </div>
     );
   }
 
   // Game in progress
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark overflow-hidden relative">
-      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+    <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
+      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
         <GlobalLogo className="hidden md:flex pointer-events-auto opacity-50 hover:opacity-100 transition-opacity" />
       </div>
-      <div className="w-full max-w-md z-10 my-16 relative">
+      <div className="w-full max-w-md shrink-0 z-10 my-auto py-2 relative">
         {/* Header */}
         <div className="text-center mb-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
@@ -403,7 +403,7 @@ export function GameBoard({
           </div>
         )}
       </div>
-      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-40 hover:opacity-100 transition-opacity" />
+      <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-40 hover:opacity-100 transition-opacity" />
     </div>
   );
 }

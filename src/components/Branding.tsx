@@ -13,10 +13,10 @@ export function GlobalLogo({ className = "" }: { className?: string }) {
 export function DeveloperFooter({ className = "" }: { className?: string }) {
   return (
     <div className={`flex flex-col items-center gap-2 ${className}`}>
-      <p className="text-[10px] md:text-xs text-muted-foreground font-medium tracking-wide bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm border border-white/5">
+      <p className="text-[9px] md:text-[10px] lg:text-xs text-muted-foreground font-medium tracking-wide bg-black/40 px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm border border-white/5">
         Developed by <span className="text-game-cyan font-bold drop-shadow-[0_0_5px_rgba(0,229,255,0.3)]">Apurba Mallik</span>
       </p>
-      <div className="flex items-center gap-4 text-muted-foreground/80 bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/5 shadow-lg">
+      <div className="flex items-center gap-1.5 xs:gap-2 md:gap-4 text-muted-foreground/80 bg-black/40 px-2.5 xs:px-3 md:px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/5 shadow-lg">
         <a href="https://github.com/apurbamallik" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:scale-110 transition-all" title="GitHub">
           <Github className="w-3.5 h-3.5 md:w-4 md:h-4" />
         </a>

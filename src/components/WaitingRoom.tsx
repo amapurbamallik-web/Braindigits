@@ -26,12 +26,13 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
-      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+    <div className="flex flex-col items-center justify-between min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
+      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
         <GlobalLogo className="hidden md:flex pointer-events-auto" />
       </div>
-      <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-        <div className="absolute top-6 right-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+
+      <div className="w-full max-w-md my-auto py-6 shrink-0 relative z-10 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div className="absolute top-0 right-0 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           <Button
             onClick={() => setShowSettings(true)}
             variant="ghost"
@@ -132,7 +133,7 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           roomCode={gameState.roomCode}
         />
       </div>
-      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100" />
+      <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
     </div>
   );
 }
