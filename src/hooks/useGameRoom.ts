@@ -9,6 +9,8 @@ import {
 } from "@/lib/game-types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
+const TURN_DURATION_MS = 15000;
+
 export function useGameRoom() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [playerId] = useState(() => generatePlayerId());
@@ -92,7 +94,6 @@ export function useGameRoom() {
       };
       setGameState(state);
       const channel = subscribeToChannel(roomCode, true);
-      // Broadcast initial state after a small delay to ensure subscription
       setTimeout(() => {
         channel.send({
           type: "broadcast",
@@ -116,7 +117,6 @@ export function useGameRoom() {
         score: 0,
       };
       const channel = subscribeToChannel(roomCode.toUpperCase(), false);
-      // Send join request after subscription is ready
       setTimeout(() => {
         channel.send({
           type: "broadcast",
@@ -135,12 +135,15 @@ export function useGameRoom() {
       status: "playing",
       currentTurnIndex: 0,
       targetNumber: generateTargetNumber(1, 100),
+      minRange: 1,
+      maxRange: 100,
       players: gameState.players.map((p) => ({
         ...p,
         attempts: 0,
         guesses: [],
       })),
       winnerId: null,
+      turnDeadline: Date.now() + TURN_DURATION_MS,
     };
     setGameState(updated);
     channelRef.current.send({
@@ -152,13 +155,17 @@ export function useGameRoom() {
 
   const makeGuess = useCallback(
     (guess: number) => {
-      if (!gameState || !channelRef.current) return;
+      if (!gameState || !channelRef.current || gameState.status !== "playing") return;
+      
       const currentPlayer = gameState.players[gameState.currentTurnIndex];
+      // Only the active player can make a guess to advance the state
       if (currentPlayer.id !== playerId) return;
 
+      const validGuess = Math.max(gameState.minRange, Math.min(gameState.maxRange, guess));
+
       let hint: "higher" | "lower" | "correct";
-      if (guess < gameState.targetNumber) hint = "higher";
-      else if (guess > gameState.targetNumber) hint = "lower";
+      if (validGuess < gameState.targetNumber) hint = "higher";
+      else if (validGuess > gameState.targetNumber) hint = "lower";
       else hint = "correct";
 
       const updatedPlayers = gameState.players.map((p) =>
@@ -168,7 +175,7 @@ export function useGameRoom() {
               attempts: p.attempts + 1,
               guesses: [
                 ...p.guesses,
-                { value: guess, hint, timestamp: Date.now() },
+                { value: validGuess, hint, timestamp: Date.now() },
               ],
             }
           : p
@@ -189,6 +196,7 @@ export function useGameRoom() {
         currentTurnIndex: nextTurnIndex,
         status: isWinner ? "finished" : "playing",
         winnerId: isWinner ? playerId : null,
+        turnDeadline: Date.now() + TURN_DURATION_MS,
       };
 
       setGameState(updated);
@@ -201,6 +209,26 @@ export function useGameRoom() {
     [gameState, playerId]
   );
 
+  const skipTurn = useCallback(() => {
+    if (!gameState || !channelRef.current || gameState.status !== "playing") return;
+    
+    const currentPlayer = gameState.players[gameState.currentTurnIndex];
+    if (currentPlayer.id !== playerId) return;
+
+    const updated: GameState = {
+      ...gameState,
+      currentTurnIndex: (gameState.currentTurnIndex + 1) % gameState.players.length,
+      turnDeadline: Date.now() + TURN_DURATION_MS,
+    };
+
+    setGameState(updated);
+    channelRef.current.send({
+      type: "broadcast",
+      event: "game_update",
+      payload: { state: updated },
+    });
+  }, [gameState, playerId]);
+
   const restartGame = useCallback(() => {
     if (!gameState || !channelRef.current) return;
     const updated: GameState = {
@@ -208,6 +236,8 @@ export function useGameRoom() {
       status: "playing",
       targetNumber: generateTargetNumber(1, 100),
       currentTurnIndex: 0,
+      minRange: 1,
+      maxRange: 100,
       players: gameState.players.map((p) => ({
         ...p,
         attempts: 0,
@@ -215,6 +245,7 @@ export function useGameRoom() {
       })),
       winnerId: null,
       round: gameState.round + 1,
+      turnDeadline: Date.now() + TURN_DURATION_MS,
     };
     setGameState(updated);
     channelRef.current.send({
@@ -235,6 +266,21 @@ export function useGameRoom() {
     gameState?.status === "playing" &&
     gameState.players[gameState.currentTurnIndex]?.id === playerId;
   const isHost = currentPlayer?.isHost ?? false;
+
+  // Timed auto-guess enforcer for Multiplayer
+  useEffect(() => {
+    if (gameState?.status !== "playing") return;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (isMyTurn && gameState.turnDeadline && now >= gameState.turnDeadline) {
+        // Time expired! Skip turn internally without penalties
+        skipTurn();
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [gameState, isMyTurn, skipTurn]);
 
   return {
     gameState,

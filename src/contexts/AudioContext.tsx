@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'win';
+export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'win' | 'tick' | 'timeout';
 
 type AudioContextType = {
   isSoundEnabled: boolean;
@@ -68,6 +68,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
           setTimeout(() => playTone(freq, 'square', 0.25, i === 3 ? 0.5 : 0.3), i * 120);
         });
+        break;
+      case 'tick':
+        // Fast, high-pitch rhythmic tick
+        playTone(800, 'square', 0.05, 0.4);
+        break;
+      case 'timeout':
+        // Low harsh buzzer
+        playTone(150, 'sawtooth', 0.4, 0.8);
         break;
     }
   };

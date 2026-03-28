@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut } from "lucide-react";
+import { useAudio } from "@/contexts/AudioContext";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -13,6 +14,70 @@ interface GameBoardProps {
   onLeave: () => void;
   isHost: boolean;
 }
+
+const TurnTimer = ({ deadline, isActive }: { deadline?: number, isActive: boolean }) => {
+  const [timeLeft, setTimeLeft] = useState(15000);
+  const { playSfx } = useAudio();
+  const lastTickRef = useRef<number>(-1);
+  const hasPlayedTimeoutRef = useRef(false);
+  
+  useEffect(() => {
+    if (!deadline || !isActive) {
+      setTimeLeft(15000);
+      lastTickRef.current = -1;
+      hasPlayedTimeoutRef.current = false;
+      return;
+    }
+
+    let animationFrameId: number;
+    const updateTime = () => {
+      const remaining = Math.max(0, deadline - Date.now());
+      setTimeLeft(remaining);
+      
+      if (remaining > 0) {
+        const seconds = Math.ceil(remaining / 1000);
+        // Play tick when 5s or less remain
+        if (remaining <= 5000 && seconds !== lastTickRef.current) {
+          playSfx('tick');
+          lastTickRef.current = seconds;
+        }
+        animationFrameId = requestAnimationFrame(updateTime);
+      } else if (!hasPlayedTimeoutRef.current) {
+        // Time expired! Play harsh timeout buzzer
+        playSfx('timeout');
+        hasPlayedTimeoutRef.current = true;
+      }
+    };
+    
+    animationFrameId = requestAnimationFrame(updateTime);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [deadline, isActive, playSfx]);
+
+  const percentage = Math.max(0, Math.min(100, (timeLeft / 15000) * 100));
+  const isCritical = timeLeft < 5000 && isActive && timeLeft > 0;
+  const secondsLeft = Math.ceil(timeLeft / 1000);
+
+  return (
+    <div className="w-full mt-3 relative">
+      <div className="flex justify-between items-center mb-1.5 px-0.5">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Time Remaining</span>
+        <span className={`text-xs font-mono font-bold ${isActive ? (isCritical ? "text-red-400 animate-pulse" : "text-game-cyan") : "text-muted-foreground"}`}>
+          {secondsLeft.toString().padStart(2, '0')}s
+        </span>
+      </div>
+      <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+        <div 
+          className={`h-full rounded-full ${
+            isActive 
+              ? isCritical ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-game-cyan shadow-[0_0_10px_rgba(0,229,255,0.5)]" 
+              : "bg-muted-foreground/30"
+          }`}
+          style={{ width: `${isActive ? percentage : 100}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export function GameBoard({
   gameState,
@@ -126,15 +191,16 @@ export function GameBoard({
 
         {/* Turn indicator */}
         <div
-          className={`rounded-xl p-4 mb-6 text-center transition-colors border ${
+          className={`rounded-xl p-4 mb-6 text-center transition-colors border relative overflow-hidden ${
             isMyTurn
-              ? "bg-game-cyan/10 border-game-cyan/30"
+              ? "bg-game-cyan/10 border-game-cyan/30 shadow-[0_0_15px_rgba(0,229,255,0.1)]"
               : "bg-muted/30 border-border/50"
           }`}
         >
-          <p className={`text-sm font-medium ${isMyTurn ? "text-game-cyan" : "text-muted-foreground"}`}>
-            {isMyTurn ? "⚡ Your turn!" : `${currentTurnPlayer?.name}'s turn`}
+          <p className={`text-sm font-bold tracking-wide ${isMyTurn ? "text-game-cyan" : "text-muted-foreground"}`}>
+            {isMyTurn ? "⚡ YOUR TURN!" : `${currentTurnPlayer?.name.toUpperCase()}'S TURN`}
           </p>
+          <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} />
         </div>
 
         {/* My guesses (private) */}
@@ -216,7 +282,7 @@ export function GameBoard({
                 type="number"
                 min={gameState.minRange}
                 max={gameState.maxRange}
-                placeholder="Your guess"
+                placeholder="Your guess (1-100)"
                 value={guessInput}
                 onChange={(e) => {
                   setGuessInput(e.target.value);

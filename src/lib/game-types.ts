@@ -23,6 +23,7 @@ export interface GameState {
   players: Player[];
   winnerId: string | null;
   round: number;
+  turnDeadline?: number;
 }
 
 export type BroadcastPayload =

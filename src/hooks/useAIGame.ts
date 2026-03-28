@@ -3,6 +3,7 @@ import { GameState, Player, generateTargetNumber, generatePlayerId } from "@/lib
 
 const AI_NAMES = ["HAL 9000", "GLaDOS", "DeepBlue", "AlphaGo", "ChatGPT", "Skynet"];
 const getAiName = () => AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
+const TURN_DURATION_MS = 15000;
 
 export function useAIGame(playerName: string) {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -41,6 +42,7 @@ export function useAIGame(playerName: string) {
       players: [player, aiPlayer],
       winnerId: null,
       round: 1,
+      turnDeadline: Date.now() + TURN_DURATION_MS,
     };
     
     aiStateRef.current = { min: 1, max: 100 };
@@ -57,13 +59,16 @@ export function useAIGame(playerName: string) {
   const makeGuess = useCallback(
     (guess: number) => {
       setGameState((prevState) => {
-        if (!prevState) return prevState;
+        if (!prevState || prevState.status !== "playing") return prevState;
         
         const currentPlayer = prevState.players[prevState.currentTurnIndex];
         
+        // Ensure valid guess bounds for auto-guess or user error
+        const validGuess = Math.max(prevState.minRange, Math.min(prevState.maxRange, guess));
+        
         let hint: "higher" | "lower" | "correct";
-        if (guess < prevState.targetNumber) hint = "higher";
-        else if (guess > prevState.targetNumber) hint = "lower";
+        if (validGuess < prevState.targetNumber) hint = "higher";
+        else if (validGuess > prevState.targetNumber) hint = "lower";
         else hint = "correct";
 
         const updatedPlayers = prevState.players.map((p) =>
@@ -73,7 +78,7 @@ export function useAIGame(playerName: string) {
                 attempts: p.attempts + 1,
                 guesses: [
                   ...p.guesses,
-                  { value: guess, hint, timestamp: Date.now() },
+                  { value: validGuess, hint, timestamp: Date.now() },
                 ],
               }
             : p
@@ -84,7 +89,16 @@ export function useAIGame(playerName: string) {
           ? prevState.currentTurnIndex
           : (prevState.currentTurnIndex + 1) % prevState.players.length;
 
-        const updated: GameState = {
+        // Update active min/max hints for AI ONLY if it's the AI's turn
+        if (currentPlayer.id === aiId) {
+          if (hint === "higher") {
+            aiStateRef.current.min = Math.max(aiStateRef.current.min, validGuess + 1);
+          } else if (hint === "lower") {
+            aiStateRef.current.max = Math.min(aiStateRef.current.max, validGuess - 1);
+          }
+        }
+
+        return {
           ...prevState,
           players: isWinner
             ? updatedPlayers.map((p) =>
@@ -94,39 +108,55 @@ export function useAIGame(playerName: string) {
           currentTurnIndex: nextTurnIndex,
           status: isWinner ? "finished" : "playing",
           winnerId: isWinner ? currentPlayer.id : null,
+          turnDeadline: Date.now() + TURN_DURATION_MS,
         };
-
-        // If playing smart AI locally, track bounds across all guesses
-        if (hint === "higher") aiStateRef.current.min = Math.max(aiStateRef.current.min, guess + 1);
-        if (hint === "lower") aiStateRef.current.max = Math.min(aiStateRef.current.max, guess - 1);
-
-        return updated;
       });
     },
     []
   );
   
-  // AI Turn Logic
+  // AI Turn Logic & Auto-guess Enforcement
   useEffect(() => {
     if (gameState && gameState.status === "playing") {
       const currentPlayer = gameState.players[gameState.currentTurnIndex];
-      // Check if it's the AI's turn
-      if (currentPlayer.id === aiId) {
-        const timer = setTimeout(() => {
+      const isAI = currentPlayer.id === aiId;
+      
+      let timer: number | null = null;
+      let interval: number | null = null;
+
+      if (isAI) {
+        // AI makes its standard intentional move
+        timer = window.setTimeout(() => {
           const min = aiStateRef.current.min;
           const max = aiStateRef.current.max;
-          // Random constrained guess logic: Math.floor(Math.random() * (max - min + 1)) + min
-          // Guarantee valid bounds
           const safeMin = Math.min(min, 100);
           const safeMax = Math.max(max, safeMin);
           const aiGuess = Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
           makeGuess(aiGuess);
-        }, 1200 + Math.random() * 800); // 1.2 to 2.0 seconds thinking time
-        
-        return () => clearTimeout(timer);
+        }, 1200 + Math.random() * 800) as unknown as number; // 1.2 to 2.0s
       }
+
+      // Enforce the 15-second deadline for EVERYONE
+      interval = window.setInterval(() => {
+        setGameState((prev) => {
+          if (prev && prev.status === 'playing' && prev.turnDeadline && Date.now() >= prev.turnDeadline) {
+            // TIME IS UP! Skip turn without penalty guess
+            return {
+              ...prev,
+              currentTurnIndex: (prev.currentTurnIndex + 1) % prev.players.length,
+              turnDeadline: Date.now() + TURN_DURATION_MS,
+            };
+          }
+          return prev;
+        });
+      }, 500);
+      
+      return () => {
+        if (timer) clearTimeout(timer);
+        if (interval) clearInterval(interval);
+      };
     }
-  }, [gameState, makeGuess]);
+  }, [gameState?.currentTurnIndex, gameState?.status, makeGuess]);
 
   const restartGame = useCallback(() => {
     setGameState((prevState) => {
@@ -137,6 +167,8 @@ export function useAIGame(playerName: string) {
         status: "playing",
         targetNumber: generateTargetNumber(1, 100),
         currentTurnIndex: 0,
+        minRange: 1,
+        maxRange: 100,
         players: prevState.players.map((p) => ({
           ...p,
           attempts: 0,
@@ -144,6 +176,7 @@ export function useAIGame(playerName: string) {
         })),
         winnerId: null,
         round: prevState.round + 1,
+        turnDeadline: Date.now() + TURN_DURATION_MS,
       };
     });
   }, []);
