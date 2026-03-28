@@ -95,7 +95,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
                 </div>
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-amber/15 text-game-amber font-bold flex items-center justify-center text-xs">2</span>
-                  <p><strong className="text-foreground">Guess the Number</strong> — A secret number between 1–100 is generated. Players take turns guessing.</p>
+                  <p><strong className="text-foreground">Guess the Number</strong> — A secret number within the chosen range is generated. Players take turns guessing.</p>
                 </div>
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-purple/15 text-game-purple font-bold flex items-center justify-center text-xs">3</span>

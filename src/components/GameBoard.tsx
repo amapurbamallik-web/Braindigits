@@ -200,7 +200,9 @@ export function GameBoard({
           <p className={`text-sm font-bold tracking-wide ${isMyTurn ? "text-game-cyan" : "text-muted-foreground"}`}>
             {isMyTurn ? "⚡ YOUR TURN!" : `${currentTurnPlayer?.name.toUpperCase()}'S TURN`}
           </p>
-          <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} />
+          {gameState.timerEnabled !== false && (
+            <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} />
+          )}
         </div>
 
         {/* My guesses (private) */}
@@ -282,7 +284,7 @@ export function GameBoard({
                 type="number"
                 min={gameState.minRange}
                 max={gameState.maxRange}
-                placeholder="Your guess (1-100)"
+                placeholder={`Your guess (${gameState.minRange}-${gameState.maxRange})`}
                 value={guessInput}
                 onChange={(e) => {
                   setGuessInput(e.target.value);
