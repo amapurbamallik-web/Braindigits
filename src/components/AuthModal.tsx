@@ -159,9 +159,12 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
               <div className="space-y-2 relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-game-cyan transition-colors" />
                 <Input
+                  id="username"
+                  name="username"
                   type="text"
                   required
                   placeholder="Unique Username"
+                  autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="bg-black/50 border-white/10 pl-12 h-14 rounded-2xl text-white placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-game-cyan focus-visible:border-transparent transition-all"
@@ -192,9 +195,12 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                 <div className="space-y-2 relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-white transition-colors" />
                   <Input
+                    id="email"
+                    name="email"
                     type="email"
                     required
                     placeholder="Email Address"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-black/50 border-white/10 pl-12 h-14 rounded-2xl text-white placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-white transition-all"
@@ -203,9 +209,12 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                 <div className="space-y-2 relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-white transition-colors" />
                   <Input
+                    id="password"
+                    name="password"
                     type="password"
                     required
                     placeholder="Password"
+                    autoComplete={view === "login" ? "current-password" : "new-password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     minLength={6}
