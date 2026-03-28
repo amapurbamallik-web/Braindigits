@@ -71,7 +71,7 @@ export function useGameRoom() {
   );
 
   const createRoom = useCallback(
-    (playerName: string) => {
+    (playerName: string, settings: import("@/lib/game-types").GameSettings) => {
       const roomCode = generateRoomCode();
       const host: Player = {
         id: playerId,
@@ -84,13 +84,15 @@ export function useGameRoom() {
       const state: GameState = {
         roomCode,
         status: "waiting",
-        targetNumber: generateTargetNumber(1, 100),
+        targetNumber: generateTargetNumber(1, settings.maxRange),
         minRange: 1,
-        maxRange: 100,
+        maxRange: settings.maxRange,
         currentTurnIndex: 0,
         players: [host],
         winnerId: null,
         round: 1,
+        timerEnabled: settings.timerEnabled,
+        timerDuration: settings.timerDuration,
       };
       setGameState(state);
       const channel = subscribeToChannel(roomCode, true);
@@ -134,16 +136,16 @@ export function useGameRoom() {
       ...gameState,
       status: "playing",
       currentTurnIndex: 0,
-      targetNumber: generateTargetNumber(1, 100),
+      targetNumber: generateTargetNumber(1, gameState.maxRange),
       minRange: 1,
-      maxRange: 100,
+      maxRange: gameState.maxRange,
       players: gameState.players.map((p) => ({
         ...p,
         attempts: 0,
         guesses: [],
       })),
       winnerId: null,
-      turnDeadline: Date.now() + TURN_DURATION_MS,
+      turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
     channelRef.current.send({
@@ -196,7 +198,7 @@ export function useGameRoom() {
         currentTurnIndex: nextTurnIndex,
         status: isWinner ? "finished" : "playing",
         winnerId: isWinner ? playerId : null,
-        turnDeadline: Date.now() + TURN_DURATION_MS,
+        turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
       };
 
       setGameState(updated);
@@ -218,7 +220,7 @@ export function useGameRoom() {
     const updated: GameState = {
       ...gameState,
       currentTurnIndex: (gameState.currentTurnIndex + 1) % gameState.players.length,
-      turnDeadline: Date.now() + TURN_DURATION_MS,
+      turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
 
     setGameState(updated);
@@ -234,10 +236,10 @@ export function useGameRoom() {
     const updated: GameState = {
       ...gameState,
       status: "playing",
-      targetNumber: generateTargetNumber(1, 100),
+      targetNumber: generateTargetNumber(1, gameState.maxRange),
       currentTurnIndex: 0,
       minRange: 1,
-      maxRange: 100,
+      maxRange: gameState.maxRange,
       players: gameState.players.map((p) => ({
         ...p,
         attempts: 0,
@@ -245,7 +247,7 @@ export function useGameRoom() {
       })),
       winnerId: null,
       round: gameState.round + 1,
-      turnDeadline: Date.now() + TURN_DURATION_MS,
+      turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
     channelRef.current.send({

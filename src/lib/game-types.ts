@@ -24,7 +24,21 @@ export interface GameState {
   winnerId: string | null;
   round: number;
   turnDeadline?: number;
+  timerEnabled?: boolean;
+  timerDuration?: number;
 }
+
+export interface GameSettings {
+  maxRange: number;
+  timerEnabled: boolean;
+  timerDuration: number;
+}
+
+export const DEFAULT_SETTINGS: GameSettings = {
+  maxRange: 100,
+  timerEnabled: true,
+  timerDuration: 15000,
+};
 
 export type BroadcastPayload =
   | { type: "game_start"; state: GameState }

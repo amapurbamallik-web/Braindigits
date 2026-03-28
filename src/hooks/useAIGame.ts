@@ -5,7 +5,7 @@ const AI_NAMES = ["HAL 9000", "GLaDOS", "DeepBlue", "AlphaGo", "ChatGPT", "Skyne
 const getAiName = () => AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
 const TURN_DURATION_MS = 15000;
 
-export function useAIGame(playerName: string) {
+export function useAIGame(playerName: string, settings: import("@/lib/game-types").GameSettings) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [playerId] = useState(() => generatePlayerId());
   
@@ -35,19 +35,21 @@ export function useAIGame(playerName: string) {
     const state: GameState = {
       roomCode: "LOCAL-AI",
       status: "playing",
-      targetNumber: generateTargetNumber(1, 100),
+      targetNumber: generateTargetNumber(1, settings.maxRange),
       minRange: 1,
-      maxRange: 100,
+      maxRange: settings.maxRange,
       currentTurnIndex: 0, // Player goes first
       players: [player, aiPlayer],
       winnerId: null,
       round: 1,
-      turnDeadline: Date.now() + TURN_DURATION_MS,
+      turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
+      timerEnabled: settings.timerEnabled,
+      timerDuration: settings.timerDuration
     };
     
-    aiStateRef.current = { min: 1, max: 100 };
+    aiStateRef.current = { min: 1, max: settings.maxRange };
     setGameState(state);
-  }, [playerId, playerName]);
+  }, [playerId, playerName, settings]);
   
   // Start the game immediately when the hook initializes with a player name
   useEffect(() => {
@@ -108,7 +110,7 @@ export function useAIGame(playerName: string) {
           currentTurnIndex: nextTurnIndex,
           status: isWinner ? "finished" : "playing",
           winnerId: isWinner ? currentPlayer.id : null,
-          turnDeadline: Date.now() + TURN_DURATION_MS,
+          turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
         };
       });
     },
@@ -144,7 +146,7 @@ export function useAIGame(playerName: string) {
             return {
               ...prev,
               currentTurnIndex: (prev.currentTurnIndex + 1) % prev.players.length,
-              turnDeadline: Date.now() + TURN_DURATION_MS,
+              turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
             };
           }
           return prev;
@@ -165,10 +167,10 @@ export function useAIGame(playerName: string) {
       return {
         ...prevState,
         status: "playing",
-        targetNumber: generateTargetNumber(1, 100),
+        targetNumber: generateTargetNumber(1, settings.maxRange),
         currentTurnIndex: 0,
         minRange: 1,
-        maxRange: 100,
+        maxRange: settings.maxRange,
         players: prevState.players.map((p) => ({
           ...p,
           attempts: 0,
@@ -176,7 +178,7 @@ export function useAIGame(playerName: string) {
         })),
         winnerId: null,
         round: prevState.round + 1,
-        turnDeadline: Date.now() + TURN_DURATION_MS,
+        turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
       };
     });
   }, []);

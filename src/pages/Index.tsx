@@ -3,13 +3,14 @@ import { ModeSelection } from "@/components/ModeSelection";
 import { GameLobby } from "@/components/GameLobby";
 import { WaitingRoom } from "@/components/WaitingRoom";
 import { GameBoard } from "@/components/GameBoard";
+import { GameSettings, DEFAULT_SETTINGS } from "@/lib/game-types";
 
 import { useGameRoom } from "@/hooks/useGameRoom";
 import { useAIGame } from "@/hooks/useAIGame";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { ArrowLeft } from "lucide-react";
 
-function MultiplayerWrapper({ onExit }: { onExit: () => void }) {
+function MultiplayerWrapper({ onExit, settings }: { onExit: () => void, settings: GameSettings }) {
   const {
     gameState,
     playerId,
@@ -22,6 +23,10 @@ function MultiplayerWrapper({ onExit }: { onExit: () => void }) {
     restartGame,
     leaveRoom,
   } = useGameRoom();
+
+  const handleCreateRoom = (name: string) => {
+    createRoom(name, settings);
+  };
 
   useGameSounds(gameState, playerId);
 
@@ -39,7 +44,7 @@ function MultiplayerWrapper({ onExit }: { onExit: () => void }) {
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
-        <GameLobby onCreateRoom={createRoom} onJoinRoom={joinRoom} />
+        <GameLobby onCreateRoom={handleCreateRoom} onJoinRoom={joinRoom} />
       </div>
     );
   }
@@ -61,7 +66,7 @@ function MultiplayerWrapper({ onExit }: { onExit: () => void }) {
   );
 }
 
-function AIWrapper({ onExit }: { onExit: () => void }) {
+function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSettings }) {
   const [playerName, setPlayerName] = useState("");
   const [isStarted, setIsStarted] = useState(false);
 
@@ -73,7 +78,7 @@ function AIWrapper({ onExit }: { onExit: () => void }) {
     makeGuess,
     restartGame,
     leaveRoom,
-  } = useAIGame(isStarted ? playerName || "Player" : "");
+  } = useAIGame(isStarted ? playerName || "Player" : "", settings);
 
   useGameSounds(gameState, playerId);
 
@@ -134,14 +139,15 @@ function AIWrapper({ onExit }: { onExit: () => void }) {
 
 export default function Index() {
   const [mode, setMode] = useState<"select" | "friends" | "ai">("select");
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
 
   if (mode === "friends") {
-    return <MultiplayerWrapper onExit={() => setMode("select")} />;
+    return <MultiplayerWrapper onExit={() => setMode("select")} settings={settings} />;
   }
 
   if (mode === "ai") {
-    return <AIWrapper onExit={() => setMode("select")} />;
+    return <AIWrapper onExit={() => setMode("select")} settings={settings} />;
   }
 
-  return <ModeSelection onSelectMode={setMode} />;
+  return <ModeSelection onSelectMode={setMode} settings={settings} onSettingsChange={setSettings} />;
 }
