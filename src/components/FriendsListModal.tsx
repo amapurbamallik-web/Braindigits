@@ -26,7 +26,8 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const { playSfx } = useAudio();
   const queryClient = useQueryClient();
   const [friendships, setFriendships] = useState<FriendshipData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   
   // Search state
@@ -37,13 +38,21 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
   const fetchFriends = async () => {
     if (!user) return;
+    setLoading(true);
+    setFetchError(null);
+
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      setFetchError("Request timed out. Check your connection.");
+    }, 10000);
+
     try {
-      // Execute both searches: relationships where I am user 1 OR user 2
       const { data: rels, error: relsError } = await (supabase as any)
         .from("friendships")
         .select("*")
         .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
+      clearTimeout(timeoutId);
       if (relsError) throw relsError;
 
       if (!rels || rels.length === 0) {
@@ -51,7 +60,6 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         return;
       }
 
-      // We have relationships! Let's fetch the profiles of those friends
       const friendIds = rels.map((r: any) => r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1);
       
       const { data: profiles, error: profError } = await (supabase as any)
@@ -72,8 +80,9 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
       setFriendships(merged);
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error("Error fetching friends:", err);
-      toast.error("Failed to sync friends.");
+      setFetchError("Failed to load friends. Tap to retry.");
     } finally {
       setLoading(false);
     }
@@ -81,9 +90,10 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
   useEffect(() => {
     if (open && user) {
-      setLoading(true);
       fetchFriends();
     } else {
+      setLoading(false);
+      setFetchError(null);
       setSearchQuery("");
       setSearchResults([]);
     }
@@ -314,8 +324,19 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-1 relative z-10 custom-scrollbar">
           {loading ? (
-            <div className="flex justify-center items-center py-10">
-               <Loader2 className="h-6 w-6 animate-spin text-game-cyan" />
+            <div className="flex flex-col justify-center items-center py-10 gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-game-cyan" />
+              <p className="text-xs text-muted-foreground animate-pulse">Loading friends...</p>
+            </div>
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-4 text-center">
+              <p className="text-red-400 text-sm font-medium">{fetchError}</p>
+              <button
+                onClick={fetchFriends}
+                className="px-4 py-2 rounded-xl bg-game-cyan/10 hover:bg-game-cyan/20 border border-game-cyan/30 text-game-cyan text-sm font-bold transition-all active:scale-95"
+              >
+                Retry
+              </button>
             </div>
           ) : (
             <>

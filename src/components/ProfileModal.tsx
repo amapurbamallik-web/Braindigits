@@ -1,5 +1,5 @@
 import { UserProfile, useAuth } from "@/contexts/AuthContext";
-import { X, Trophy, Swords, Zap, LogOut, Star, Award, Shield, Camera, Upload, Loader2, ImagePlus } from "lucide-react";
+import { X, Trophy, Swords, Zap, LogOut, Star, Award, Shield, Camera, Loader2, ImagePlus, Pencil } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -29,7 +29,7 @@ function getRankInfo(games: number) {
 }
 
 export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalProps) {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, updateProfileField } = useAuth();
   const { playSfx } = useAudio();
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -56,16 +56,19 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
 
   const updateAvatar = async (val: string) => {
     if (!profile) return;
-    setUploading(true);
     playSfx('click');
+    // 1. Update UI instantly — no spinner, no wait
+    updateProfileField({ avatar_url: val });
+    setIsEditingAvatar(false);
+    // 2. Save to DB silently in the background
     try {
       const { error } = await (supabase as any).from("profiles").update({ avatar_url: val }).eq("id", profile.id);
       if (error) throw error;
-      await refreshProfile();
-      toast.success("Avatar updated via warp speed! 🚀");
-      setIsEditingAvatar(false);
+      toast.success("Avatar saved! 🚀");
     } catch (err: any) {
-      toast.error(err.message || "Failed to update avatar.");
+      toast.error(err.message || "Failed to save avatar.");
+      // Revert on failure
+      updateProfileField({ avatar_url: profile.avatar_url });
     } finally {
       setUploading(false);
     }
@@ -75,45 +78,35 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    
-    // Resize image heavily via HTML Canvas string compression
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const MAX_SIZE = 128;
-        
-        let width = img.width;
-        let height = img.height;
-        let cropX = 0;
-        let cropY = 0;
-        let cropSize = Math.min(width, height);
-        
-        // Center crop to square
-        if (width > height) {
-          cropX = (width - height) / 2;
-        } else {
-          cropY = (height - width) / 2;
-        }
-        
-        canvas.width = MAX_SIZE;
-        canvas.height = MAX_SIZE;
-        
-        if (ctx) {
-          ctx.fillStyle = '#0a0a0f'; // BG fallback
-          ctx.fillRect(0, 0, MAX_SIZE, MAX_SIZE);
-          ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, MAX_SIZE, MAX_SIZE);
-        }
-        
-        // Output as robust WebP
-        const compressedBase64 = canvas.toDataURL("image/webp", 0.7);
-        updateAvatar(compressedBase64);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+
+    // Use createImageBitmap for fast, zero-flicker parallel decode
+    const objectUrl = URL.createObjectURL(file);
+    createImageBitmap(file).then((bitmap) => {
+      URL.revokeObjectURL(objectUrl);
+      const AVATAR_SIZE = 80; // 80x80 is plenty for an avatar
+      const canvas = document.createElement("canvas");
+      canvas.width = AVATAR_SIZE;
+      canvas.height = AVATAR_SIZE;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { setUploading(false); return; }
+
+      // Center-crop to square
+      const srcSize = Math.min(bitmap.width, bitmap.height);
+      const sx = (bitmap.width - srcSize) / 2;
+      const sy = (bitmap.height - srcSize) / 2;
+
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      ctx.drawImage(bitmap, sx, sy, srcSize, srcSize, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      bitmap.close();
+
+      // 0.5 quality WebP — tiny file, still looks sharp at 80px
+      const compressed = canvas.toDataURL("image/webp", 0.5);
+      updateAvatar(compressed);
+    }).catch(() => {
+      setUploading(false);
+      toast.error("Could not read image file.");
+    });
   };
 
   return (
@@ -131,26 +124,31 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
           </div>
           
           <div className="absolute -bottom-10 z-10 w-full flex justify-center">
-            <button 
-                onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
-                className={`w-20 h-20 rounded-full bg-[#0a0a0f] border-4 ${rank.border} shadow-[0_0_25px_var(--tw-shadow-color)] drop-shadow-2xl flex items-center justify-center relative group overflow-hidden active:scale-95 transition-all outline-none`} 
-                style={{ '--tw-shadow-color': 'rgba(255,255,255,0.1)' } as React.CSSProperties}
-            >
-              {profile?.avatar_url && profile.avatar_url.startsWith('data:image') ? (
-                 <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : profile?.avatar_url ? (
-                 <span className="text-4xl leading-none pt-1 drop-shadow-lg">{profile.avatar_url}</span>
-              ) : (
-                 <span className={`text-2xl font-black font-mono tracking-tighter ${rank.color}`}>
-                   {username.substring(0, 2).toUpperCase()}
-                 </span>
-              )}
-
-              {/* Hover overlay for editing */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300">
-                  <Camera className="w-6 h-6 text-white mb-0.5" />
+            <div className="relative">
+              <button 
+                  onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
+                  className={`w-20 h-20 rounded-full bg-[#0a0a0f] border-4 ${rank.border} shadow-[0_0_25px_var(--tw-shadow-color)] drop-shadow-2xl flex items-center justify-center relative group overflow-hidden active:scale-95 transition-all outline-none`} 
+                  style={{ '--tw-shadow-color': 'rgba(255,255,255,0.1)' } as React.CSSProperties}
+              >
+                {profile?.avatar_url && profile.avatar_url.startsWith('data:image') ? (
+                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : profile?.avatar_url ? (
+                   <span className="text-4xl leading-none pt-1 drop-shadow-lg">{profile.avatar_url}</span>
+                ) : (
+                   <span className={`text-2xl font-black font-mono tracking-tighter ${rank.color}`}>
+                     {username.substring(0, 2).toUpperCase()}
+                   </span>
+                )}
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300">
+                    <Camera className="w-5 h-5 text-white" />
+                </div>
+              </button>
+              {/* Pencil badge — always visible edit indicator */}
+              <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md pointer-events-none`}>
+                <Pencil className={`w-3 h-3 ${rank.color}`} />
               </div>
-            </button>
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,7 @@ interface AuthContextType {
   isLoading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfileField: (fields: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   logout: async () => {},
   refreshProfile: async () => {},
+  updateProfileField: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -167,8 +169,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Instant optimistic update — no DB roundtrip needed for UI
+  const updateProfileField = (fields: Partial<UserProfile>) => {
+    setProfile(prev => prev ? { ...prev, ...fields } : prev);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, isLoading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, isLoading, logout, refreshProfile, updateProfileField }}>
       {children}
     </AuthContext.Provider>
   );
