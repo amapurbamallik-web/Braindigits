@@ -1,17 +1,23 @@
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Users } from "lucide-react";
+import { Copy, Check, Users, Settings2 } from "lucide-react";
 import { useState } from "react";
+import { RoomSettingsModal } from "./RoomSettingsModal";
+import { FriendsListModal } from "./FriendsListModal";
+import { GlobalLogo, DeveloperFooter } from "./Branding";
 
 interface WaitingRoomProps {
   gameState: GameState;
   isHost: boolean;
   onStart: () => void;
   onLeave: () => void;
+  onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
 }
 
-export function WaitingRoom({ gameState, isHost, onStart, onLeave }: WaitingRoomProps) {
+export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings }: WaitingRoomProps) {
   const [copied, setCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(gameState.roomCode);
@@ -21,7 +27,22 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave }: WaitingRoom
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
+      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+        <GlobalLogo className="hidden md:flex pointer-events-auto" />
+      </div>
       <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div className="absolute top-6 right-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <Button
+            onClick={() => setShowSettings(true)}
+            variant="ghost"
+            size="icon"
+            className="rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg active:scale-95"
+            title="Room Settings"
+          >
+            <Settings2 className="h-5 w-5" />
+          </Button>
+        </div>
+
         <div className="inline-flex items-center gap-2 rounded-full bg-game-cyan/10 px-4 py-1.5 mb-6">
           <Users className="h-4 w-4 text-game-cyan" />
           <span className="text-sm font-medium text-game-cyan">Waiting for players</span>
@@ -43,6 +64,15 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave }: WaitingRoom
             )}
           </button>
         </div>
+
+        <Button
+          onClick={() => setShowFriends(true)}
+          variant="outline"
+          className="w-full mb-6 h-12 border-game-purple/30 text-game-purple hover:bg-game-purple/10 font-bold active:scale-[0.97]"
+        >
+          <Users className="w-5 h-5 mr-2" />
+          Invite Friends
+        </Button>
 
         <div className="bg-card rounded-xl p-5 shadow-sm mb-6 border border-border/50">
           <p className="text-sm font-medium text-muted-foreground mb-3">
@@ -83,7 +113,26 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave }: WaitingRoom
         {!isHost && (
           <p className="text-sm text-muted-foreground mt-4">Waiting for host to start…</p>
         )}
+
+        <RoomSettingsModal
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={{
+            maxRange: gameState.maxRange,
+            timerEnabled: gameState.timerEnabled ?? false,
+            timerDuration: gameState.timerDuration ?? 15000,
+          }}
+          onSettingsChange={onUpdateSettings}
+          readOnly={!isHost}
+        />
+
+        <FriendsListModal
+          open={showFriends}
+          onClose={() => setShowFriends(false)}
+          roomCode={gameState.roomCode}
+        />
       </div>
+      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100" />
     </div>
   );
 }

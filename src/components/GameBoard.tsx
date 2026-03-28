@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut } from "lucide-react";
+import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut, Settings2 } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
 import confetti from "canvas-confetti";
+import { RoomSettingsModal } from "./RoomSettingsModal";
+import { GlobalLogo, DeveloperFooter } from "./Branding";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -13,6 +15,8 @@ interface GameBoardProps {
   onGuess: (guess: number) => void;
   onRestart: () => void;
   onLeave: () => void;
+  onLeaveEarly?: () => void;
+  onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
   isHost: boolean;
 }
 
@@ -87,10 +91,13 @@ export function GameBoard({
   onGuess,
   onRestart,
   onLeave,
+  onLeaveEarly,
+  onUpdateSettings,
   isHost,
 }: GameBoardProps) {
   const [guessInput, setGuessInput] = useState("");
   const [inputError, setInputError] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const currentTurnPlayer = gameState.players[gameState.currentTurnIndex];
@@ -160,7 +167,10 @@ export function GameBoard({
     const isMe = winner.id === playerId;
     return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark relative overflow-hidden">
-        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up relative z-10" style={{ animationDelay: "0.1s" }}>
+        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+          <GlobalLogo className="hidden md:flex pointer-events-auto" />
+        </div>
+        <div className="w-full max-w-md text-center opacity-0 animate-fade-in-up relative z-10 my-16" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
               <Trophy className="h-10 w-10 text-game-amber" />
@@ -211,28 +221,60 @@ export function GameBoard({
               </Button>
             )}
           </div>
+          <div className="flex gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowSettings(true)} className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 text-muted-foreground hover:text-white">
+              <Settings2 className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+          </div>
           {!isHost && (
             <p className="text-sm text-muted-foreground mt-4">Waiting for host to restart…</p>
           )}
+
+          <RoomSettingsModal
+            open={showSettings}
+            onClose={() => setShowSettings(false)}
+            settings={{
+              maxRange: gameState.maxRange,
+              timerEnabled: gameState.timerEnabled ?? false,
+              timerDuration: gameState.timerDuration ?? 15000,
+            }}
+            onSettingsChange={onUpdateSettings}
+            readOnly={!isHost}
+          />
         </div>
+        <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100" />
       </div>
     );
   }
 
   // Game in progress
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+        <GlobalLogo className="hidden md:flex pointer-events-auto opacity-50 hover:opacity-100 transition-opacity" />
+      </div>
+      <div className="w-full max-w-md z-10 my-16 relative">
         {/* Header */}
         <div className="text-center mb-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
             Round {gameState.round} · Room {gameState.roomCode}
           </p>
-          <p className="text-lg font-semibold">
-            Guess between{" "}
-            <span className="font-mono text-game-cyan">{gameState.minRange}</span>
-            {" – "}
-            <span className="font-mono text-game-cyan">{gameState.maxRange}</span>
+          <p className="text-lg font-semibold flex items-center justify-center gap-2">
+            <span>Guess between{" "}
+              <span className="font-mono text-game-cyan">{gameState.minRange}</span>
+              {" – "}
+              <span className="font-mono text-game-cyan">{gameState.maxRange}</span>
+            </span>
+            {onLeaveEarly && (
+              <button 
+                onClick={onLeaveEarly}
+                className="ml-2 p-1.5 rounded-md hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors"
+                title="Leave Match"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </p>
         </div>
 
@@ -297,20 +339,27 @@ export function GameBoard({
             {gameState.players.map((player, i) => (
               <div
                 key={player.id}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
                   i === gameState.currentTurnIndex
                     ? "bg-game-cyan/10 ring-1 ring-game-cyan/20"
-                    : "bg-muted/40"
+                    : player.isEliminated
+                      ? "bg-black/30 opacity-50 grayscale"
+                      : "bg-muted/40"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  {i === gameState.currentTurnIndex && (
+                  {i === gameState.currentTurnIndex && !player.isEliminated && (
                     <div className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse-glow" />
                   )}
-                  <span className={`font-medium ${player.id === playerId ? "text-game-cyan" : ""}`}>
+                  <span className={`font-medium ${player.id === playerId ? "text-game-cyan" : ""} ${player.isEliminated ? "line-through" : ""}`}>
                     {player.name}
                     {player.id === playerId && " (you)"}
                   </span>
+                  {player.isEliminated && (
+                    <span className="text-[9px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1">
+                      Left
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <span className="text-xs">{player.attempts} guesses</span>
@@ -354,6 +403,7 @@ export function GameBoard({
           </div>
         )}
       </div>
+      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-40 hover:opacity-100 transition-opacity" />
     </div>
   );
 }

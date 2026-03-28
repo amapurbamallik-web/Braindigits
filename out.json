@@ -1,0 +1,26 @@
+[
+  {
+    "id": "21f534b4-d02b-4c9b-9134-27589b13f3d6",
+    "username": "apurba",
+    "total_wins": 0,
+    "total_games": 0,
+    "ai_wins": 0,
+    "created_at": "2026-03-28T18:55:26.772048+00:00"
+  },
+  {
+    "id": "43fff298-54a3-42a0-9654-a087b2a6e13d",
+    "username": "csfcsvsfc",
+    "total_wins": 0,
+    "total_games": 0,
+    "ai_wins": 0,
+    "created_at": "2026-03-28T18:51:49.519148+00:00"
+  },
+  {
+    "id": "e91042fe-1a87-44b9-9144-8909ee3745ec",
+    "username": "TestUserXYZ123",
+    "total_wins": 0,
+    "total_games": 0,
+    "ai_wins": 0,
+    "created_at": "2026-03-28T18:31:36.467929+00:00"
+  }
+]

@@ -1,20 +1,36 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hash, Users, Zap } from "lucide-react";
+import { Hash, Users, Zap, Settings2 } from "lucide-react";
 import logoImg from "@/assets/brain-digits-logo.png";
+import { GameSettings } from "@/lib/game-types";
+import { toast } from "sonner";
+import { RoomSettingsModal } from "./RoomSettingsModal";
+import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { useAuth } from "@/contexts/AuthContext";
+import React from "react";
 
 interface GameLobbyProps {
   onCreateRoom: (name: string) => void;
   onJoinRoom: (code: string, name: string) => void;
+  settings: GameSettings;
+  onSettingsChange: (s: GameSettings) => void;
 }
 
-export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
-  const [playerName, setPlayerName] = useState("");
+export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange }: GameLobbyProps) {
+  const { profile } = useAuth();
+  const [playerName, setPlayerName] = useState(profile?.username || "");
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"menu" | "create" | "join">("menu");
   const [nameError, setNameError] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  React.useEffect(() => {
+    if (profile?.username) {
+      setPlayerName(profile.username);
+    }
+  }, [profile]);
 
   const validateName = () => {
     const trimmed = playerName.trim();
@@ -51,12 +67,30 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-game-dark">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-game-dark overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
+        <GlobalLogo className="hidden md:flex pointer-events-auto" />
+      </div>
+
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-cyan/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
+
       <div
         className="w-full max-w-md opacity-0 animate-fade-in-up"
         style={{ animationDelay: "0.1s" }}
       >
-        {/* Logo */}
+        {/* Logo and Settings Button */}
+        <div className="absolute top-6 right-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <Button
+            onClick={() => setShowSettings(true)}
+            variant="ghost"
+            size="icon"
+            className="rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg active:scale-95"
+            title="Room Settings"
+          >
+            <Settings2 className="h-5 w-5" />
+          </Button>
+        </div>
+        
         <div className="text-center mb-8">
           <img
             src={logoImg}
@@ -93,17 +127,24 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
 
         {(mode === "create" || mode === "join") && (
           <div className="space-y-4 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-            <Input
-              placeholder="Your name"
-              value={playerName}
-              onChange={(e) => {
-                setPlayerName(e.target.value);
-                setNameError("");
-              }}
-              maxLength={20}
-              className="h-12 text-base bg-card/50 border-border/50"
-              autoFocus
-            />
+            {profile?.username ? (
+              <div className="p-3 bg-game-cyan/10 border border-game-cyan/20 rounded-xl flex items-center justify-between">
+                <span className="text-muted-foreground text-sm font-semibold">Playing as:</span>
+                <span className="text-white font-bold">{profile.username}</span>
+              </div>
+            ) : (
+              <Input
+                placeholder="Your name"
+                value={playerName}
+                onChange={(e) => {
+                  setPlayerName(e.target.value);
+                  setNameError("");
+                }}
+                maxLength={20}
+                className="h-12 text-base bg-card/50 border-border/50"
+                autoFocus={mode === "create"}
+              />
+            )}
             {mode === "join" && (
               <Input
                 placeholder="Room code (e.g. ABC12)"
@@ -142,7 +183,16 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
           </div>
         )}
 
+        <RoomSettingsModal
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={settings}
+          onSettingsChange={onSettingsChange}
+          readOnly={false}
+        />
       </div>
+
+      <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-100" />
     </div>
   );
 }

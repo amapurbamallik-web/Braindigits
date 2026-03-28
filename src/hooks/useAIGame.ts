@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { GameState, Player, generateTargetNumber, generatePlayerId } from "@/lib/game-types";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const AI_NAMES = ["HAL 9000", "GLaDOS", "DeepBlue", "AlphaGo", "ChatGPT", "Skynet"];
 const getAiName = () => AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
@@ -12,6 +14,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
   // AI tracking properties
   const aiStateRef = useRef({ min: 1, max: 100 });
   const aiId = "ai-bot-id";
+  const { user, profile, refreshProfile } = useAuth();
+  const lastFinishedMatchId = useRef<string | null>(null);
 
   const initGame = useCallback(() => {
     const player: Player = {
@@ -21,6 +25,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       guesses: [],
       isHost: true,
       score: 0,
+      isEliminated: false,
+      missedTurns: 0,
     };
     
     const aiPlayer: Player = {
@@ -30,6 +36,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       guesses: [],
       isHost: false,
       score: 0,
+      isEliminated: false,
+      missedTurns: 0,
     };
 
     const state: GameState = {
@@ -78,6 +86,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
             ? {
                 ...p,
                 attempts: p.attempts + 1,
+                missedTurns: 0,
                 guesses: [
                   ...p.guesses,
                   { value: validGuess, hint, timestamp: Date.now() },
@@ -142,10 +151,32 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       interval = window.setInterval(() => {
         setGameState((prev) => {
           if (prev && prev.status === 'playing' && prev.turnDeadline && Date.now() >= prev.turnDeadline) {
-            // TIME IS UP! Skip turn without penalty guess
+            const currentPlayer = prev.players[prev.currentTurnIndex];
+            
+            const missedTurns = (currentPlayer.missedTurns || 0) + 1;
+            const isEliminated = missedTurns >= 3;
+
+            const updatedPlayers = prev.players.map((p) =>
+              p.id === currentPlayer.id
+                ? { ...p, missedTurns, isEliminated }
+                : p
+            );
+
+            const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
+            let status: GameState["status"] = prev.status;
+            let winnerId = prev.winnerId;
+
+            if (activePlayers.length === 1) {
+              status = "finished";
+              winnerId = activePlayers[0].id;
+            }
+
             return {
               ...prev,
+              players: updatedPlayers,
               currentTurnIndex: (prev.currentTurnIndex + 1) % prev.players.length,
+              status,
+              winnerId,
               turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
             };
           }
@@ -159,6 +190,25 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       };
     }
   }, [gameState?.currentTurnIndex, gameState?.status, makeGuess]);
+  // Sync AI wins to profile on game end
+  useEffect(() => {
+    if (gameState?.status === "finished" && user && profile) {
+      const matchId = `ai-${gameState.targetNumber}`;
+      if (lastFinishedMatchId.current !== matchId) {
+        lastFinishedMatchId.current = matchId;
+        
+        const isWinner = gameState.winnerId === playerId;
+        const newWins = isWinner ? profile.ai_wins + 1 : profile.ai_wins;
+        // Total games also goes up
+        const newTotalGames = profile.total_games + 1;
+        
+        (supabase as any).from("profiles").update({
+          ai_wins: newWins,
+          total_games: newTotalGames
+        }).eq("id", user.id).then(() => refreshProfile());
+      }
+    }
+  }, [gameState?.status, gameState?.winnerId, playerId, user, profile, refreshProfile]);
 
   const restartGame = useCallback(() => {
     setGameState((prevState) => {
@@ -175,6 +225,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
           ...p,
           attempts: 0,
           guesses: [],
+          isEliminated: false,
+          missedTurns: 0,
         })),
         winnerId: null,
         round: prevState.round + 1,
@@ -185,6 +237,18 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
 
   const leaveRoom = useCallback(() => {
     setGameState(null);
+  }, []);
+
+  const updateRoomSettings = useCallback((newSettings: import("@/lib/game-types").GameSettings) => {
+    setGameState(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        maxRange: newSettings.maxRange,
+        timerEnabled: newSettings.timerEnabled,
+        timerDuration: newSettings.timerDuration,
+      };
+    });
   }, []);
 
   const currentPlayer = gameState?.players.find((p) => p.id === playerId);
@@ -206,5 +270,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
     makeGuess,
     restartGame,
     leaveRoom,
+    leaveGameEarly: leaveRoom,
+    updateRoomSettings,
   };
 }

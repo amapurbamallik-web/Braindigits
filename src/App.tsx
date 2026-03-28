@@ -7,12 +7,14 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { AudioProvider } from "./contexts/AudioContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AudioProvider>
+    <AuthProvider>
+      <AudioProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -25,7 +27,8 @@ const App = () => (
       </BrowserRouter>
       <MusicPlayer />
       </TooltipProvider>
-    </AudioProvider>
+      </AudioProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

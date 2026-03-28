@@ -1,0 +1,1 @@
+const lib = require('./src/integrations/supabase/client.ts'); // nope node can't do ts easily without tsx

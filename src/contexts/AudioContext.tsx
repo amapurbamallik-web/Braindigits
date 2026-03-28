@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'win' | 'tick' | 'timeout';
+export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'win' | 'tick' | 'timeout' | 'notification' | 'expand';
 
 type AudioContextType = {
   isSoundEnabled: boolean;
@@ -94,6 +94,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       case 'timeout':
         // Low harsh buzzer
         playTone(150, 'sawtooth', 0.4, 1.5);
+        break;
+      case 'notification':
+        // High-pitched bright double chime for incoming invites
+        playTone(600, 'sine', 0.1, 0.8);
+        playTone(800, 'sine', 0.2, 0.8, 0.15);
+        break;
+      case 'expand':
+        // Soft UI tech slide/click
+        playTone(400, 'triangle', 0.05, 0.4);
         break;
     }
   };

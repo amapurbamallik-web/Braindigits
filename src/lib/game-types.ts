@@ -5,6 +5,8 @@ export interface Player {
   guesses: GuessRecord[];
   isHost: boolean;
   score: number;
+  isEliminated?: boolean;
+  missedTurns?: number;
 }
 
 export interface GuessRecord {
