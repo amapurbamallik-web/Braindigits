@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hash, Users, Zap, HelpCircle, X } from "lucide-react";
+import { Hash, Users, Zap } from "lucide-react";
 import logoImg from "@/assets/brain-digits-logo.png";
 
 interface GameLobbyProps {
@@ -14,7 +14,6 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"menu" | "create" | "join">("menu");
   const [nameError, setNameError] = useState("");
-  const [showInstructions, setShowInstructions] = useState(false);
 
   const validateName = () => {
     const trimmed = playerName.trim();
@@ -82,14 +81,6 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
               <Users className="h-5 w-5 mr-2" />
               Join Room
             </Button>
-            <Button
-              onClick={() => setShowInstructions(true)}
-              variant="ghost"
-              className="w-full h-12 text-sm text-muted-foreground hover:text-game-amber hover:bg-game-amber/10"
-            >
-              <HelpCircle className="h-4 w-4 mr-2" />
-              How to Play
-            </Button>
           </div>
         )}
 
@@ -142,46 +133,6 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
           </div>
         )}
 
-        {/* Instructions Modal */}
-        {showInstructions && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="w-full max-w-md bg-card rounded-2xl p-6 shadow-2xl border border-border/30 opacity-0 animate-scale-in">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl font-bold text-foreground">How to Play</h2>
-                <button
-                  onClick={() => setShowInstructions(false)}
-                  className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground active:scale-95 transition-transform"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-cyan/15 text-game-cyan font-bold flex items-center justify-center text-xs">1</span>
-                  <p><strong className="text-foreground">Create or Join</strong> — One player creates a room and shares the 5-letter code. Others join with the code.</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-amber/15 text-game-amber font-bold flex items-center justify-center text-xs">2</span>
-                  <p><strong className="text-foreground">Guess the Number</strong> — A secret number between 1–100 is generated. Players take turns guessing.</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-purple/15 text-game-purple font-bold flex items-center justify-center text-xs">3</span>
-                  <p><strong className="text-foreground">Get Hints</strong> — After each guess you'll see "Higher" or "Lower". Only you see your hints — opponents can't!</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-success/15 text-game-success font-bold flex items-center justify-center text-xs">4</span>
-                  <p><strong className="text-foreground">Win!</strong> — First player to guess correctly wins the round and earns a point. Play multiple rounds!</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowInstructions(false)}
-                className="w-full mt-6 h-11 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-semibold active:scale-[0.97] transition-transform"
-              >
-                Got it!
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
