@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Users, Bot, HelpCircle, X, Settings2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import logoImg from "@/assets/brain-digits-logo.png";
 import { GameSettings } from "@/lib/game-types";
 import { useAudio } from "@/contexts/AudioContext";
@@ -14,6 +15,7 @@ interface ModeSelectionProps {
 export function ModeSelection({ onSelectMode, settings, onSettingsChange }: ModeSelectionProps) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [customRangeInput, setCustomRangeInput] = useState("");
   const { isSoundEnabled, toggleSound } = useAudio();
 
   return (
@@ -135,7 +137,14 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
               <div className="space-y-6">
                 {/* Max Range Toggle Group */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Number Range</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Number Range</label>
+                    {![100, 200, 500, 1000].includes(settings.maxRange) && (
+                      <span className="text-xs font-bold text-game-cyan bg-game-cyan/10 px-2 py-0.5 rounded-full border border-game-cyan/20">
+                        Custom: 1-{settings.maxRange}
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {[100, 200, 500, 1000].map(val => (
                       <button
@@ -152,6 +161,27 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
                         1-{val}
                       </button>
                     ))}
+                  </div>
+                  <div className="flex gap-2 relative mt-2">
+                    <Input
+                      type="number"
+                      placeholder="Custom Max (e.g. 999)"
+                      value={customRangeInput}
+                      onChange={(e) => setCustomRangeInput(e.target.value)}
+                      className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-game-cyan/50 text-white placeholder:text-muted-foreground/50"
+                    />
+                    <Button 
+                      onClick={() => {
+                        const val = parseInt(customRangeInput);
+                        if (!isNaN(val) && val > 1) {
+                          onSettingsChange({ ...settings, maxRange: val });
+                          setCustomRangeInput("");
+                        }
+                      }}
+                      className="h-10 px-4 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-bold transition-transform active:scale-95"
+                    >
+                      Set
+                    </Button>
                   </div>
                 </div>
 

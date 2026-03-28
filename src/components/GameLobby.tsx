@@ -14,6 +14,7 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
   const [roomCode, setRoomCode] = useState("");
   const [mode, setMode] = useState<"menu" | "create" | "join">("menu");
   const [nameError, setNameError] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const validateName = () => {
     const trimmed = playerName.trim();
@@ -30,17 +31,23 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
   };
 
   const handleCreate = () => {
+    if (isConnecting) return;
     if (!validateName()) return;
+    setIsConnecting(true);
     onCreateRoom(playerName.trim());
+    setTimeout(() => setIsConnecting(false), 5000); // Unlock if connection drops
   };
 
   const handleJoin = () => {
+    if (isConnecting) return;
     if (!validateName()) return;
     if (!roomCode.trim() || roomCode.trim().length !== 5) {
       setNameError("Enter a valid 5-character room code");
       return;
     }
+    setIsConnecting(true);
     onJoinRoom(roomCode.trim().toUpperCase(), playerName.trim());
+    setTimeout(() => setIsConnecting(false), 5000); // Unlock if connection drops
   };
 
   return (
@@ -115,19 +122,21 @@ export function GameLobby({ onCreateRoom, onJoinRoom }: GameLobbyProps) {
             <div className="flex gap-3">
               <Button
                 variant="outline"
+                disabled={isConnecting}
                 onClick={() => {
                   setMode("menu");
                   setNameError("");
                 }}
-                className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50"
+                className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 disabled:opacity-50"
               >
                 Back
               </Button>
               <Button
+                disabled={isConnecting}
                 onClick={mode === "create" ? handleCreate : handleJoin}
-                className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark"
+                className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark disabled:opacity-90"
               >
-                {mode === "create" ? "Create" : "Join"}
+                {isConnecting ? "Connecting..." : mode === "create" ? "Create" : "Join"}
               </Button>
             </div>
           </div>
