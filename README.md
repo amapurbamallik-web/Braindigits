@@ -13,39 +13,49 @@
 
 ---
 
-**BrainDigits** is a highly interactive, fast-paced online multiplayer number guessing game. Designed with a sleek, modern glassmorphic UI, players can compete in real-time against friends or challenge the smart AI bot offline. The rules are simple, but the competition is fierce: guess the hidden number before anyone else!
+**BrainDigits** is a highly interactive, fast-paced online multiplayer number guessing game. Designed with a sleek, premium Web3-inspired glassmorphic UI, players can compete in real-time against friends or challenge a smart offline AI bot. The rules are simple, but the competition is fierce: use logical deduction to deduce the hidden number before your opponent does!
 
 ![BrainDigits Preview](https://imglink.cc/i/ccCdYmCDE9)
 
 ## 🚀 Features
 
+### 👤 Persistent Gamified Profiles
+- **Secure Authentication**: Register and log in using Supabase-powered OAuth or Email/Password credentials.
+- **Stat Tracking**: All your played games, wins against AI, and multiplayer victories are securely tracked and saved to your customizable profile dashboard.
+- **Guest Mode**: Just want to play? Jump right into the action instantly as a guest without signing up!
+
+### 🌍 Global Leaderboards & Friend Systems
+- **World Rankings**: Check the top-tier players around the globe via the real-time competitive leaderboard.
+- **Social Invites**: Add other players to your Friends List. Send and receive real-time push notifications to instantly jump into private 1v1 matches.
+
 ### 🎮 Multiple Game Modes
-- **Play with Friends**: Host a room, share the unique room code, and compete with connected players in real-time.
-- **Play with AI**: No internet? No friends online? Challenge the built-in AI bot in a solo deathmatch.
+- **Play with Friends**: Host a room, share a unique 5-character room code, or send a direct friend invite to compete with peers in real-time.
+- **Play with AI**: Challenge the built-in algorithmic AI bot in an intense offline solo deathmatch.
 
 ### ⚙️ Highly Customizable Rules
-- **Dynamic Number Ranges**: Choose from presets (1-100, 1-500, 1-1000) or specify a completely custom maximum number.
-- **Turn Timers**: Add pressure to your matches by enabling custom time limits per guess (e.g., 10s, 15s, or custom durations).
+- **Dynamic Number Ranges**: Choose from presets (1-100, 1-500, 1-1000) or specify a completely custom maximum boundary.
+- **Turn Timers**: Add sweat-inducing pressure to your matches by enabling custom strict time limits per guess (e.g., 10s, 15s).
 
 ### 💡 Interactive Gameplay Elements
-- **Smart Hints**: Get instant feedback ("Higher" or "Lower") after every guess to narrow down your options.
-- **Synthesized Audio Engine**: Immersive sound effects for turns, clicks, correct guesses, and countdowns (fully togglable).
-- **Turn-Based Action**: Fast, organized rounds where speed and strategy matter.
+- **Smart Logic Hints**: Receive instant feedback ("Higher" or "Lower") immediately after every guess to systematically narrow down your options.
+- **Independent Audio Systems**: High-quality embedded retro arcade looping soundtracks and synthesized SFX (clicks, bells, buzzers). Music and SFX can be muted/played completely independently.
+- **Turn-Based Action**: Fast, low-latency, organized rounds orchestrated via Supabase real-time Websockets.
 
 ### 🎨 Premium Aesthetics
-- **Sleek UI/UX**: Beautiful dark mode paired with neon brights (Cyan & Purple), glassmorphic elements, and smooth micro-animations.
-- **Mobile Responsive**: Play flawlessly on any device, from desktop monitors to mobile phones.
+- **Sleek UI/UX**: Beautiful deep dark mode paired with neon brights (Cyan & Purple), dynamic ambient glowing backgrounds, and modern micro-animations.
+- **Mobile Responsive**: Play flawlessly on any device, from ultrawide desktop monitors to mobile phones.
 
 ---
 
 ## 🕹️ How to Play
 
 1. **Visit the Arena**: Open [BrainDigits](https://braindigits.vercel.app).
-2. **Choose your Mode**: Select *Play with Friends* or *Play with AI*.
-3. **Configure Settings**: (Optional) Click the Settings gear to adjust the Max Number Range, Turn Timer, or Sound.
-4. **Join/Create**: Enter a room code to join an existing game, or create a new room to invite others.
-5. **Guess!**: When it's your turn, submit your guess. Use the "Higher/Lower" feedback to guide your next move.
-6. **Win**: The first player to correctly guess the target number wins the round!
+2. **Authenticate**: *Sign In* to track your stats and access the social tab, or choose *Play as Guest*.
+3. **Choose your Mode**: Select *Play with Friends* or *Play with AI*.
+4. **Configure Settings**: Click the Settings gear to adjust the Max Number Range, Turn Timer, or configure the independent Music and SFX buttons.
+5. **Socialize or Join**: Open your Friends List to send a direct challenge, enter a room code to join an existing game, or create a brand new room.
+6. **Guess!**: When it's your turn, submit your numerical deduction. Use the "Higher/Lower" telemetry to guide your next move.
+7. **Win**: The first player to correctly guess the target number wins the round and earns a point on the global leaderboard!
 
 ---
 

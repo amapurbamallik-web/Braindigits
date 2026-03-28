@@ -42,8 +42,10 @@ const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, de
     osc.type = type;
     osc.frequency.setValueAtTime(freq, startTime);
     
+    const finalVol = vol * 2.5; // Globally boost SFX volume
+    
     // Envelope to prevent clipping/clicking
-    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.setValueAtTime(finalVol, startTime);
     gain.gain.exponentialRampToValueAtTime(0.00001, startTime + dur);
     
     osc.connect(gain);

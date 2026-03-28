@@ -24,7 +24,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className }) => {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = 0.25;
+      audioRef.current.volume = 0.08;
     }
   }, []);
 
