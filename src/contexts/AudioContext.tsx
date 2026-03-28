@@ -5,6 +5,8 @@ export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'w
 type AudioContextType = {
   isSoundEnabled: boolean;
   toggleSound: () => void;
+  isMusicEnabled: boolean;
+  toggleMusic: () => void;
   playSfx: (type: SoundType) => void;
 };
 
@@ -56,8 +58,10 @@ const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, de
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [isMusicEnabled, setIsMusicEnabled] = useState(false);
 
   const toggleSound = () => setIsSoundEnabled(!isSoundEnabled);
+  const toggleMusic = () => setIsMusicEnabled(!isMusicEnabled);
 
   const playSfx = (type: SoundType) => {
     if (!isSoundEnabled) return;
@@ -108,7 +112,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AudioContext.Provider value={{ isSoundEnabled, toggleSound, playSfx }}>
+    <AudioContext.Provider value={{ isSoundEnabled, toggleSound, isMusicEnabled, toggleMusic, playSfx }}>
       {children}
     </AudioContext.Provider>
   );
@@ -117,7 +121,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 export function useAudio() {
   const context = useContext(AudioContext);
   if (context === undefined) {
-    return { isSoundEnabled: false, toggleSound: () => {}, playSfx: () => {} };
+    return { isSoundEnabled: false, toggleSound: () => {}, isMusicEnabled: false, toggleMusic: () => {}, playSfx: () => {} };
   }
   return context;
 }
