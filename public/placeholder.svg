@@ -1,8 +1,8 @@
 <svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <text x="10" y="35" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="800" font-size="28" fill="#1A1A1A">
-    brain<tspan fill="#007AFF">digits</tspan>
+  <rect width="200" height="50" rx="8" fill="#13161f" />
+  <text x="45" y="33" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="24" fill="#f8fafc">
+    Brain<tspan fill="#00e5ff">Digits</tspan>
   </text>
-  
-  <circle cx="185" cy="15" r="4" fill="#007AFF" />
-  <path d="M185 22V35" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="24" cy="25" r="8" fill="#ab47bc" />
+  <circle cx="24" cy="25" r="3" fill="#00e5ff" />
 </svg>
