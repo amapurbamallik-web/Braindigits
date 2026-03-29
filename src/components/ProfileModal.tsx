@@ -13,6 +13,7 @@ interface ProfileModalProps {
   onClose: () => void;
   profile: UserProfile | null;
   onLogout?: () => void;
+  readOnly?: boolean;
 }
 
 const RANKS = [
@@ -27,7 +28,7 @@ function getRankInfo(games: number) {
   return RANKS.find(r => games <= r.max) || RANKS[0];
 }
 
-export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalProps) {
+export function ProfileModal({ open, onClose, profile, onLogout, readOnly = false }: ProfileModalProps) {
   const { refreshProfile, updateProfileField } = useAuth();
   const { playSfx } = useAudio();
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
@@ -128,24 +129,28 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
               </div>
 
               {/* Camera hover overlay — covers full circle, separate from overflow:hidden */}
-              <button
-                onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
-                title="Change avatar"
-                aria-label="Change avatar"
-                className="absolute inset-0 rounded-full z-10 hover:bg-black/55 active:bg-black/70 transition-colors duration-150 flex items-center justify-center group"
-              >
-                <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
+                  title="Change avatar"
+                  aria-label="Change avatar"
+                  className="absolute inset-0 rounded-full z-10 hover:bg-black/55 active:bg-black/70 transition-colors duration-150 flex items-center justify-center group"
+                >
+                  <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
 
               {/* Pencil badge — z-20, always on top and clickable */}
-              <button
-                onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
-                title="Change avatar"
-                aria-label="Change avatar"
-                className={`absolute -bottom-0.5 -right-0.5 z-20 w-7 h-7 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md cursor-pointer hover:scale-125 active:scale-90 transition-transform`}
-              >
-                <Pencil className={`w-3.5 h-3.5 ${rank.color}`} />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
+                  title="Change avatar"
+                  aria-label="Change avatar"
+                  className={`absolute -bottom-0.5 -right-0.5 z-20 w-7 h-7 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md cursor-pointer hover:scale-125 active:scale-90 transition-transform`}
+                >
+                  <Pencil className={`w-3.5 h-3.5 ${rank.color}`} />
+                </button>
+              )}
             </div>
           </div>
         </div>

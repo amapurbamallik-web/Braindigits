@@ -50,7 +50,7 @@ export function Avatar({
         <span className={`${emojiSize} leading-none`}>{src}</span>
       ) : (
         <span className="text-xs font-black text-muted-foreground">
-          {initials.substring(0, 2).toUpperCase()}
+          {initials ? initials.substring(0, 2).toUpperCase() : "?"}
         </span>
       )}
     </div>

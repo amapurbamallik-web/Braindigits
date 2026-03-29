@@ -9,6 +9,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { usePresence } from "@/hooks/usePresence";
 import { Avatar } from "./Avatar";
+import { ProfileModal } from "./ProfileModal";
 
 interface FriendsListProps {
   open: boolean;
@@ -28,11 +29,12 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const { playSfx } = useAudio();
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{id: string, username: string}[]>([]);
+  const [searchResults, setSearchResults] = useState<{id: string, username: string, avatar_url?: string, total_wins: number, ai_wins: number, total_games: number}[]>([]);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Track real-time online presence of all users
@@ -108,7 +110,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       try {
         const { data, error } = await (supabase as any)
           .from("profiles")
-          .select("id, username")
+          .select("id, username, avatar_url, total_wins, ai_wins, total_games")
           .ilike("username", `${searchQuery.trim()}%`)
           .neq("id", user?.id)
           .limit(5);
@@ -296,22 +298,31 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                    {searchResults.map(res => {
                      const existing = friendships.find(f => f.friend.id === res.id);
                      return (
-                       <div key={res.id} className="flex items-center justify-between p-3 hover:bg-white/10 rounded-xl transition-all group">
-                         <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-3">
-                           <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                             <span className="text-[10px] font-bold text-white/70 uppercase">{res.username.substring(0,2)}</span>
-                           </div>
-                           <span className="text-sm font-bold text-white truncate">{res.username}</span>
-                         </div>
-                         
-                         <div className="shrink-0 flex items-center">
-                           {existing ? (
-                             <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-1 rounded-md ${existing.status === 'accepted' ? 'bg-game-cyan/10 text-game-cyan border border-game-cyan/20' : 'bg-game-amber/10 text-game-amber border border-game-amber/20'}`}>
-                               {existing.status === "accepted" ? "Friends" : "Pending"}
-                             </span>
-                           ) : (
-                            <button 
-                               onClick={() => {
+                        <div 
+                          key={res.id} 
+                          className="flex items-center justify-between p-3 hover:bg-white/10 rounded-xl transition-all group cursor-pointer"
+                          onClick={() => setSelectedProfile(res as unknown as UserProfile)}
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-3">
+                            <Avatar
+                              src={res.avatar_url}
+                              initials={res.username?.substring(0, 2) || "??"}
+                              size="w-8 h-8"
+                              emojiSize="text-lg"
+                              className="rounded-full border border-white/10 shrink-0 group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <span className="text-sm font-bold text-white truncate group-hover:text-game-cyan transition-colors">{res.username}</span>
+                          </div>
+                          
+                          <div className="shrink-0 flex items-center">
+                            {existing ? (
+                              <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-1 rounded-md ${existing.status === 'accepted' ? 'bg-game-cyan/10 text-game-cyan border border-game-cyan/20' : 'bg-game-amber/10 text-game-amber border border-game-amber/20'}`}>
+                                {existing.status === "accepted" ? "Friends" : "Pending"}
+                              </span>
+                            ) : (
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
                                  playSfx('click');
                                  handleSendRequest(res.id, res.username);
                                }}
@@ -319,9 +330,9 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                              >
                                <UserPlus className="w-3 h-3" /> Add
                              </button>
-                           )}
-                         </div>
-                       </div>
+                            )}
+                          </div>
+                        </div>
                      )
                    })}
                  </div>
@@ -357,16 +368,16 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                   <div className="space-y-2">
                     {incomingReqs.map(req => (
                       <div key={req.id} className="flex items-center justify-between bg-gradient-to-r from-game-amber/10 to-transparent p-3 sm:p-4 rounded-2xl border border-game-amber/20 group">
-                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3 cursor-pointer group-hover:scale-[1.02] transition-transform" onClick={() => setSelectedProfile(req.friend as UserProfile)}>
                           <Avatar
                             src={req.friend.avatar_url}
-                            initials={req.friend.username.substring(0, 2)}
+                            initials={req.friend.username?.substring(0, 2) || "??"}
                             size="w-9 h-9"
                             emojiSize="text-xl"
                             className="rounded-xl border border-game-amber/20 shrink-0"
                           />
                           <div className="flex flex-col min-w-0">
-                            <span className="text-white text-sm font-bold truncate">{req.friend.username}</span>
+                            <span className="text-white text-sm font-bold truncate group-hover:text-game-amber transition-colors">{req.friend.username}</span>
                             <span className="text-[10px] text-game-amber/80 font-medium">wants to connect</span>
                           </div>
                         </div>
@@ -410,18 +421,18 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                           }}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
-                            <div className="relative shrink-0">
+                            <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedProfile(friend.friend as UserProfile); }}>
                               <Avatar
                                 src={friend.friend.avatar_url}
-                                initials={friend.friend.username.substring(0, 2)}
+                                initials={friend.friend.username?.substring(0, 2) || "??"}
                                 size="w-10 h-10"
                                 emojiSize="text-xl"
-                                className="rounded-xl border border-white/10 bg-gradient-to-br from-game-cyan/10 to-game-purple/10 group-hover:scale-110 transition-transform duration-300"
+                                className="rounded-xl border border-white/10 bg-gradient-to-br from-game-cyan/10 to-game-purple/10 hover:scale-110 transition-transform duration-300 shadow-md"
                               />
                               <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0a0a0f] transition-all duration-500 ${onlineIds.has(friend.friend.id) ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)]' : 'bg-white/20'}`} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="text-white text-base font-bold truncate block">{friend.friend.username}</span>
+                              <span className="text-white text-base font-bold truncate block group-hover:text-game-cyan transition-colors">{friend.friend.username}</span>
                               <span className={`text-[10px] font-bold uppercase tracking-widest ${onlineIds.has(friend.friend.id) ? 'text-green-400' : 'text-white/25'}`}>
                                 {onlineIds.has(friend.friend.id) ? '● Online' : '● Offline'}
                               </span>
@@ -521,6 +532,12 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
             </>
           )}
         </div>
+        <ProfileModal 
+          open={!!selectedProfile} 
+          onClose={() => setSelectedProfile(null)} 
+          profile={selectedProfile} 
+          readOnly 
+        />
       </div>
     </div>
   );

@@ -74,8 +74,8 @@ export function RoomSettingsModal({
   };
 
   return (
-    // z-[100] ensures it renders above all other page elements
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+    // z-[200] ensures it renders above all other page elements
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-sm bg-[#0d0d16]/98 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
 
         {/* Header — sticky */}
@@ -226,15 +226,7 @@ export function RoomSettingsModal({
                   ))}
                 </div>
 
-                {/* Preview hearts */}
-                <div className="flex items-center justify-center gap-0.5">
-                  {Array.from({ length: Math.min(settings.maxHearts ?? 3, 10) }).map((_, i) => (
-                    <span key={i} className="text-base leading-none" style={{ filter: 'drop-shadow(0 0 3px rgba(248,113,113,0.5))' }}>❤️</span>
-                  ))}
-                  {(settings.maxHearts ?? 3) > 5 && (
-                    <span className="text-[10px] font-bold text-red-400 ml-1">×{settings.maxHearts}</span>
-                  )}
-                </div>
+
 
                 {!readOnly && (
                   <div className="flex gap-2">

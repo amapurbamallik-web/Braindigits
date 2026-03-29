@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hash, Users, Zap, Settings2 } from "lucide-react";
+import { Hash, Users, Zap, Settings2, ArrowLeft } from "lucide-react";
 import logoImg from "@/assets/brain-digits-logo.png";
 import { GameSettings } from "@/lib/game-types";
 import { toast } from "sonner";
@@ -15,9 +15,10 @@ interface GameLobbyProps {
   onJoinRoom: (code: string, name: string) => void;
   settings: GameSettings;
   onSettingsChange: (s: GameSettings) => void;
+  onBack?: () => void;
 }
 
-export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange }: GameLobbyProps) {
+export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange, onBack }: GameLobbyProps) {
   const { profile } = useAuth();
   const [playerName] = useState(() => profile?.username || `Guest-${Math.floor(1000 + Math.random() * 9000)}`);
   const [roomCode, setRoomCode] = useState("");
@@ -57,8 +58,19 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
 
   return (
     <div className="flex flex-col items-center justify-between min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
-      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
-        <GlobalLogo className="hidden md:flex pointer-events-auto" />
+      <div className="w-full flex justify-between items-center z-20 shrink-0 mb-4 px-2">
+        <div className="flex items-center gap-4">
+          {onBack && (
+            <button 
+              onClick={onBack} 
+              className="flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+            >
+              <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 shrink-0" /> <span className="text-sm font-semibold">Back</span>
+            </button>
+          )}
+          <GlobalLogo className="hidden md:flex pointer-events-auto" />
+        </div>
+        {/* Empty space to balance or future buttons on the right */}
       </div>
 
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-cyan/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />

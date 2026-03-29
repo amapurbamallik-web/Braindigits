@@ -17,10 +17,11 @@ interface WaitingRoomProps {
   onStart: () => void;
   onLeave: () => void;
   onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
+  onKick?: (playerId: string) => void;
 }
 
-export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings }: WaitingRoomProps) {
-  const { user } = useAuth();
+export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings, onKick }: WaitingRoomProps) {
+  const { user, profile } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
@@ -154,7 +155,7 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-black text-white/80">{player.name.substring(0,2).toUpperCase()}</span>
+                    <span className="text-[10px] font-black text-white/80">{player.name?.substring(0,2).toUpperCase() || "??"}</span>
                   </div>
                   <span className="font-semibold text-sm truncate">{player.name}</span>
                   {player.isHost && (
@@ -163,8 +164,22 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
                     </span>
                   )}
                 </div>
+                {/* Kick Button — only visible to Host */}
+                {isHost && !player.isHost && onKick && (
+                  <button
+                    onClick={() => {
+                        toast(`Kicked ${player.name}`);
+                        onKick(player.id);
+                    }}
+                    className="ml-2 shrink-0 flex items-center px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wide bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 border border-red-500/20 hover:border-red-500/40"
+                    title="Kick Player"
+                  >
+                    Kick
+                  </button>
+                )}
+
                 {/* Add Friend button — only for other players who are logged in users */}
-                {user && !player.isHost && player.name !== user.email && (
+                {user && !player.isHost && player.name !== profile?.username && player.name !== user.email && (
                   <button
                     onClick={() => handleAddFriend(player.name)}
                     disabled={addingFriend === player.name}

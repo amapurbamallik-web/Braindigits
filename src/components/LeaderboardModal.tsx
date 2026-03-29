@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { UserProfile, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Avatar } from "./Avatar";
+import { ProfileModal } from "./ProfileModal";
 
 interface LeaderboardModalProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface LeaderboardModalProps {
 
 export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const [tab, setTab] = useState<"pvp" | "ai">("pvp");
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -157,7 +159,8 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
             leaders.map((player, idx) => (
               <div 
                 key={player.id} 
-                className="flex items-center justify-between p-3 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors group"
+                onClick={() => setSelectedProfile(player as UserProfile)}
+                className="flex items-center justify-between p-3 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors group cursor-pointer"
                 style={{ animation: `fade-in-up 0.3s ease-out ${idx * 0.05}s both` }}
               >
                 <div className="flex items-center gap-3">
@@ -203,7 +206,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                            <Clock className="w-4 h-4 text-game-amber" />
                          </div>
                       ) : (
-                         <button onClick={() => handleSendRequest(player.id, player.username)} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white text-white hover:text-black rounded-lg transition-all active:scale-95 border border-white/10 shadow-md" title="Add Friend">
+                         <button onClick={(e) => { e.stopPropagation(); handleSendRequest(player.id, player.username); }} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white text-white hover:text-black rounded-lg transition-all active:scale-95 border border-white/10 shadow-md" title="Add Friend">
                            <UserPlus className="w-4 h-4" />
                          </button>
                       )}
@@ -215,6 +218,13 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
           )}
         </div>
       </div>
+
+      <ProfileModal 
+        open={!!selectedProfile} 
+        onClose={() => setSelectedProfile(null)} 
+        profile={selectedProfile} 
+        readOnly 
+      />
     </div>
   );
 }

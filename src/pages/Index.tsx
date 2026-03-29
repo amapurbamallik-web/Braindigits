@@ -32,6 +32,7 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
     leaveRoom,
     leaveGameEarly,
     updateRoomSettings,
+    kickPlayer,
   } = useGameRoom();
 
   const handleCreateRoom = (name: string) => {
@@ -69,20 +70,18 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
 
   if (!gameState) {
     return (
-      <div className="relative min-h-screen">
-        <button 
-          onClick={onExit} 
-          className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg transition-all active:scale-95"
-        >
-          <ArrowLeft className="w-5 h-5" /> Back
-        </button>
-        <GameLobby onCreateRoom={handleCreateRoom} onJoinRoom={joinRoom} settings={settings} onSettingsChange={onSettingsChange} />
-      </div>
+      <GameLobby 
+        onCreateRoom={handleCreateRoom} 
+        onJoinRoom={joinRoom} 
+        settings={settings} 
+        onSettingsChange={onSettingsChange} 
+        onBack={onExit}
+      />
     );
   }
 
   if (gameState.status === "waiting") {
-    return <WaitingRoom gameState={gameState} isHost={isHost} onStart={startGame} onLeave={handleLeave} onUpdateSettings={updateRoomSettings} />;
+    return <WaitingRoom gameState={gameState} isHost={isHost} onStart={startGame} onLeave={handleLeave} onUpdateSettings={updateRoomSettings} onKick={kickPlayer} />;
   }
 
   return (
