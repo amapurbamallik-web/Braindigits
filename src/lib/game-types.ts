@@ -18,7 +18,7 @@ export interface GuessRecord {
 
 export interface GameState {
   roomCode: string;
-  status: "waiting" | "playing" | "finished";
+  status: "waiting" | "playing" | "finished" | "level_complete";
   targetNumber: number;
   minRange: number;
   maxRange: number;
@@ -30,6 +30,11 @@ export interface GameState {
   timerEnabled?: boolean;
   timerDuration?: number;
   maxHearts?: number;   // configured starting lives (default 3)
+  
+  // Arcade Mode Additions
+  isArcade?: boolean;
+  level?: number;
+  optimalGuesses?: number;
 }
 
 export interface GameSettings {
@@ -37,6 +42,7 @@ export interface GameSettings {
   timerEnabled: boolean;
   timerDuration: number;
   maxHearts: number;
+  isArcade?: boolean; 
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -44,6 +50,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   timerEnabled: true,
   timerDuration: 15000,
   maxHearts: 3,
+  isArcade: false,
 };
 
 export type BroadcastPayload =

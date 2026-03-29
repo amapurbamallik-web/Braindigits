@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Trophy, Bot, Swords, UserPlus, Check, Clock } from "lucide-react";
+import { X, Trophy, Bot, Swords, UserPlus, Check, Clock, Zap } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { UserProfile, useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,7 @@ interface LeaderboardModalProps {
 }
 
 export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
-  const [tab, setTab] = useState<"pvp" | "ai">("pvp");
+  const [tab, setTab] = useState<"pvp" | "ai" | "arcade">("pvp");
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -74,11 +74,11 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const { data: leaders = [], isLoading: loading, error, refetch } = useQuery({
     queryKey: ["leaderboard", tab],
     queryFn: async () => {
-      const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
+      const orderColumn = tab === "pvp" ? "total_wins" : tab === "ai" ? "ai_wins" : "arcade_max_level";
       
       const { data, error: fetchError } = await (supabase as any)
         .from("profiles")
-        .select("id, username, total_wins, ai_wins, total_games, avatar_url")
+        .select("id, username, total_wins, ai_wins, arcade_max_level, arcade_score, total_games, avatar_url")
         .gt(orderColumn, 0)
         .order(orderColumn, { ascending: false })
         .limit(50);
@@ -114,23 +114,33 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
         <div className="flex bg-black/30 rounded-full p-1 mb-6 border border-white/5">
           <button
             onClick={() => setTab("pvp")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-[10px] md:text-xs font-semibold transition-all ${
               tab === "pvp" 
+                ? "bg-game-amber/20 text-game-amber shadow-[0_0_15px_rgba(251,191,36,0.2)]"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            <Swords className="w-3.5 h-3.5" /> PvP
+          </button>
+          <button
+            onClick={() => setTab("ai")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-[10px] md:text-xs font-semibold transition-all ${
+              tab === "ai" 
                 ? "bg-game-cyan/20 text-game-cyan shadow-[0_0_15px_rgba(0,229,255,0.2)]"
                 : "text-muted-foreground hover:text-white"
             }`}
           >
-            <Swords className="w-4 h-4" /> PvP Masters
+            <Bot className="w-3.5 h-3.5" /> AI
           </button>
           <button
-            onClick={() => setTab("ai")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-semibold transition-all ${
-              tab === "ai" 
+            onClick={() => setTab("arcade")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-[10px] md:text-xs font-semibold transition-all ${
+              tab === "arcade" 
                 ? "bg-game-purple/20 text-game-purple shadow-[0_0_15px_rgba(171,71,188,0.2)]"
                 : "text-muted-foreground hover:text-white"
             }`}
           >
-            <Bot className="w-4 h-4" /> AI Slayers
+            <Zap className="w-3.5 h-3.5" /> Arcade
           </button>
         </div>
 
@@ -189,10 +199,12 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                 </div>
                 <div className="flex items-center gap-3 text-right shrink-0">
                   <div className="flex flex-col items-end">
-                    <p className={`text-xl font-bold ${tab === "pvp" ? "text-game-cyan" : "text-game-purple"}`}>
-                      {tab === "pvp" ? player.total_wins : player.ai_wins}
+                    <p className={`text-xl font-black ${tab === "pvp" ? "text-game-cyan" : tab === "ai" ? "text-game-cyan" : "text-game-purple"}`}>
+                      {tab === "arcade" ? `Lv. ${player.arcade_max_level || 0}` : (tab === "pvp" ? player.total_wins : player.ai_wins)}
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Wins</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                      {tab === "arcade" ? "Max Level" : "Wins"}
+                    </p>
                   </div>
                   
                   {user && user.id !== player.id && (

@@ -7,6 +7,7 @@ import { GameSettings } from "@/lib/game-types";
 import { toast } from "sonner";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { getThemeClasses, GameMode } from "@/lib/theme-logic";
 import { useAuth } from "@/contexts/AuthContext";
 import React from "react";
 
@@ -16,16 +17,19 @@ interface GameLobbyProps {
   settings: GameSettings;
   onSettingsChange: (s: GameSettings) => void;
   onBack?: () => void;
+  showSettings?: boolean;
+  mode?: GameMode;
 }
 
-export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange, onBack }: GameLobbyProps) {
+export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange, onBack, showSettings = true, mode = 'friends' }: GameLobbyProps) {
   const { profile } = useAuth();
+  const theme = getThemeClasses(mode);
   const [playerName] = useState(() => profile?.username || `Guest-${Math.floor(1000 + Math.random() * 9000)}`);
   const [roomCode, setRoomCode] = useState("");
-  const [mode, setMode] = useState<"menu" | "create" | "join">("menu");
+  const [lobbyMode, setLobbyMode] = useState<"menu" | "create" | "join">("menu");
   const [nameError, setNameError] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   React.useEffect(() => {
     // Kept for structure but we auto-generate it now on mount
@@ -63,7 +67,7 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
           {onBack && (
             <button 
               onClick={onBack} 
-              className="flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+              className={`flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:${theme.bgMuted} hover:${theme.text} hover:${theme.border} shadow-lg transition-all active:scale-95 z-50 pointer-events-auto`}
             >
               <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 shrink-0" /> <span className="text-sm font-semibold">Back</span>
             </button>
@@ -73,24 +77,26 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
         {/* Empty space to balance or future buttons on the right */}
       </div>
 
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-cyan/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
+      <div className={`absolute top-[-10%] right-[-10%] w-96 h-96 ${theme.bgMuted} rounded-full blur-[100px] pointer-events-none animate-pulse`} style={{ animationDuration: '4s' }} />
 
       <div
         className="w-full max-w-md opacity-0 animate-fade-in-up shrink-0 my-auto py-6 relative"
         style={{ animationDelay: "0.1s" }}
       >
         {/* Logo and Settings Button */}
-        <div className="absolute top-0 right-0 opacity-0 animate-fade-in-up z-20" style={{ animationDelay: "0.2s" }}>
-          <Button
-            onClick={() => setShowSettings(true)}
-            variant="ghost"
-            size="icon"
-            className="rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg active:scale-95"
-            title="Room Settings"
-          >
-            <Settings2 className="h-5 w-5" />
-          </Button>
-        </div>
+        {showSettings && (
+          <div className="absolute top-0 right-0 opacity-0 animate-fade-in-up z-20" style={{ animationDelay: "0.2s" }}>
+            <Button
+              onClick={() => setShowSettingsModal(true)}
+              variant="ghost"
+              size="icon"
+              className={`rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:${theme.bgMuted} hover:${theme.text} hover:${theme.border} shadow-lg active:scale-95`}
+              title="Room Settings"
+            >
+              <Settings2 className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
         
         <div className="text-center mb-8">
           <img
@@ -104,35 +110,37 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
         </div>
 
         {/* Actions */}
-        {mode === "menu" && (
+        {lobbyMode === "menu" && (
           <div className="space-y-3 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
             <Button
-              onClick={() => setMode("create")}
-              className="w-full h-14 text-base font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark"
+              onClick={() => setLobbyMode("create")}
+              className={`w-full h-14 text-base font-black uppercase tracking-widest active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
               size="lg"
             >
               <Zap className="h-5 w-5 mr-2" />
-              Create Room
+              {mode === 'ai' ? 'Challenge AI' : 'Create Room'}
             </Button>
-            <Button
-              onClick={() => setMode("join")}
-              variant="outline"
-              className="w-full h-14 text-base font-semibold active:scale-[0.97] transition-transform border-game-cyan/30 text-game-cyan hover:bg-game-cyan/10"
-              size="lg"
-            >
-              <Users className="h-5 w-5 mr-2" />
-              Join Room
-            </Button>
+            {mode !== 'ai' && (
+              <Button
+                onClick={() => setLobbyMode("join")}
+                variant="outline"
+                className={`w-full h-14 text-base font-black uppercase tracking-widest active:scale-[0.97] transition-all ${theme.border} ${theme.text} hover:${theme.bgMuted}`}
+                size="lg"
+              >
+                <Users className="h-5 w-5 mr-2" />
+                Join Room
+              </Button>
+            )}
           </div>
         )}
 
-        {(mode === "create" || mode === "join") && (
+        {(lobbyMode === "create" || lobbyMode === "join") && (
           <div className="space-y-4 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-            <div className="p-3 bg-game-cyan/10 border border-game-cyan/20 rounded-xl flex items-center justify-between">
+            <div className={`p-3 ${theme.bgMuted} border ${theme.border} rounded-xl flex items-center justify-between`}>
               <span className="text-muted-foreground text-sm font-semibold">Playing as:</span>
-              <span className="text-white font-bold">{playerName}</span>
+              <span className={`text-white font-black ${theme.text}`}>{playerName}</span>
             </div>
-            {mode === "join" && (
+            {lobbyMode === "join" && (
               <Input
                 placeholder="Room code (e.g. ABC12)"
                 value={roomCode}
@@ -141,7 +149,7 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
                   setNameError("");
                 }}
                 maxLength={5}
-                className="h-12 text-base font-mono tracking-widest uppercase bg-card/50 border-border/50"
+                className={`h-12 text-base font-mono tracking-widest uppercase bg-card/50 border-border/50 focus-visible:${theme.ring} focus-visible:ring-offset-0`}
               />
             )}
             {nameError && (
@@ -152,7 +160,7 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
                 variant="outline"
                 disabled={isConnecting}
                 onClick={() => {
-                  setMode("menu");
+                  setLobbyMode("menu");
                   setNameError("");
                 }}
                 className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 disabled:opacity-50"
@@ -161,22 +169,24 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
               </Button>
               <Button
                 disabled={isConnecting}
-                onClick={mode === "create" ? handleCreate : handleJoin}
-                className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark disabled:opacity-90"
+                onClick={lobbyMode === "create" ? handleCreate : handleJoin}
+                className={`flex-1 h-12 font-black uppercase tracking-widest active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow} disabled:opacity-90`}
               >
-                {isConnecting ? "Connecting..." : mode === "create" ? "Create" : "Join"}
+                {isConnecting ? "Connecting..." : lobbyMode === "create" ? (mode === 'ai' ? "Launch" : "Create") : "Join"}
               </Button>
             </div>
           </div>
         )}
 
-        <RoomSettingsModal
-          open={showSettings}
-          onClose={() => setShowSettings(false)}
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-          readOnly={false}
-        />
+        {showSettings && (
+          <RoomSettingsModal
+            open={showSettingsModal}
+            onClose={() => setShowSettingsModal(false)}
+            settings={settings}
+            onSettingsChange={onSettingsChange}
+            readOnly={false}
+          />
+        )}
       </div>
 
       <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100 animate-fade-in-up" />

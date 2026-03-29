@@ -8,6 +8,7 @@ import confetti from "canvas-confetti";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
 import { LeaveConfirmModal } from "./LeaveConfirmModal";
+import { getThemeClasses, GameMode } from "@/lib/theme-logic";
 
 // Hearts display component
 const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; maxHearts: number; size?: 'sm' | 'lg' }) => {
@@ -42,10 +43,12 @@ interface GameBoardProps {
   onLeaveEarly?: () => void;
   onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
   isHost: boolean;
+  mode?: GameMode;
 }
 
-const TurnTimer = ({ deadline, isActive, duration }: { deadline?: number, isActive: boolean, duration: number }) => {
+const TurnTimer = ({ deadline, isActive, duration, mode = 'friends' }: { deadline?: number, isActive: boolean, duration: number, mode?: GameMode }) => {
   const [timeLeft, setTimeLeft] = useState(duration);
+  const theme = getThemeClasses(mode);
   const { playSfx } = useAudio();
   const lastTickRef = useRef<number>(-1);
   const hasPlayedTimeoutRef = useRef(false);
@@ -90,7 +93,7 @@ const TurnTimer = ({ deadline, isActive, duration }: { deadline?: number, isActi
     <div className="w-full mt-3 relative">
       <div className="flex justify-between items-center mb-1.5 px-0.5">
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Time Remaining</span>
-        <span className={`text-xs font-mono font-bold ${isActive ? (isCritical ? "text-red-400 animate-pulse" : "text-game-cyan") : "text-muted-foreground"}`}>
+        <span className={`text-xs font-mono font-bold ${isActive ? (isCritical ? "text-red-400 animate-pulse" : theme.text) : "text-muted-foreground"}`}>
           {secondsLeft.toString().padStart(2, '0')}s
         </span>
       </div>
@@ -98,7 +101,7 @@ const TurnTimer = ({ deadline, isActive, duration }: { deadline?: number, isActi
         <div 
           className={`h-full rounded-full ${
             isActive 
-              ? isCritical ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-game-cyan shadow-[0_0_10px_rgba(0,229,255,0.5)]" 
+              ? isCritical ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : `${theme.primary} ${theme.accentGlow}` 
               : "bg-muted-foreground/30"
           }`}
           style={{ width: `${isActive ? percentage : 100}%` }}
@@ -107,7 +110,6 @@ const TurnTimer = ({ deadline, isActive, duration }: { deadline?: number, isActi
     </div>
   );
 };
-
 export function GameBoard({
   gameState,
   playerId,
@@ -118,8 +120,10 @@ export function GameBoard({
   onLeaveEarly,
   onUpdateSettings,
   isHost,
-}: GameBoardProps) {
+  mode = 'friends'
+}: GameBoardProps & { mode?: GameMode }) {
   const [guessInput, setGuessInput] = useState("");
+  const theme = getThemeClasses(mode);
   const [inputError, setInputError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -148,7 +152,7 @@ export function GameBoard({
           angle: 60,
           spread: 55,
           origin: { x: 0, y: 0.8 },
-          colors: ['#00E5FF', '#FFB300', '#AB47BC'],
+          colors: mode === 'ai' ? ['#FBBF24', '#F59E0B', '#D97706'] : mode === 'arcade' ? ['#AB47BC', '#D946EF', '#EC4899'] : ['#00E5FF', '#00B8D4', '#00838F'],
           zIndex: 0
         });
         confetti({
@@ -156,7 +160,7 @@ export function GameBoard({
           angle: 120,
           spread: 55,
           origin: { x: 1, y: 0.8 },
-          colors: ['#00E5FF', '#FFB300', '#AB47BC'],
+          colors: mode === 'ai' ? ['#FBBF24', '#F59E0B', '#D97706'] : mode === 'arcade' ? ['#AB47BC', '#D946EF', '#EC4899'] : ['#00E5FF', '#00B8D4', '#00838F'],
           zIndex: 0
         });
 
@@ -172,10 +176,9 @@ export function GameBoard({
       isActive = false;
       clearTimeout(timeoutId);
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      // Immediately clear particles from screen on state change
       confetti.reset();
     };
-  }, [gameState.status, winner?.id, playerId]);
+  }, [gameState.status, winner?.id, playerId, mode]);
 
   const handleSubmitGuess = () => {
     const num = parseInt(guessInput, 10);
@@ -188,117 +191,96 @@ export function GameBoard({
     setGuessInput("");
   };
 
+  const maxHearts = gameState.maxHearts ?? 3;
+  const playerHearts = myPlayer?.hearts ?? maxHearts;
+
   // Winner screen
   if (gameState.status === "finished" && winner) {
     const isMe = winner.id === playerId;
-    // Detect how the win happened
     const losingPlayers = gameState.players.filter(p => p.id !== winner.id);
     const wonByElimination = losingPlayers.some(p => p.isEliminated && (p.hearts ?? 1) <= 0);
     const wonByGuess = !wonByElimination && winner.guesses.length > 0 && winner.guesses[winner.guesses.length - 1]?.hint === 'correct';
+    
     return (
       <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
-        <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
+        <div className={`absolute top-[-10%] left-[-10%] w-96 h-96 ${theme.bgMuted} rounded-full blur-[100px] pointer-events-none animate-pulse`} />
+        
+        <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4 px-2 md:px-0">
           <GlobalLogo className="hidden md:flex pointer-events-auto" />
         </div>
+
         <div className="w-full max-w-md text-center shrink-0 opacity-0 animate-fade-in-up relative z-10 my-auto py-6" style={{ animationDelay: "0.1s" }}>
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
+          <div className="mb-6 text-center">
+            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${theme.bgMuted} mb-4 animate-bounce-subtle border ${theme.border} ${theme.glow}`}>
               {wonByElimination ? (
                 <span className="text-4xl">💀</span>
               ) : (
-                <Trophy className="h-10 w-10 text-game-amber" />
+                <Trophy className={`h-10 w-10 ${theme.text}`} />
               )}
             </div>
-            <h2 className="text-3xl font-bold tracking-tight">
-              {isMe ? "You won!" : `${winner.name} wins!`}
+            <h2 className="text-4xl font-black tracking-tight text-white mb-2 uppercase drop-shadow-md">
+              {isMe ? "Victory!" : "Game Over"}
             </h2>
             {wonByElimination ? (
-              <p className="text-muted-foreground mt-2">
+              <p className={`${theme.text} font-bold text-lg`}>
                 {isMe ? "Opponent ran out of lives! ❤️" : `${winner.name} survived — you ran out of lives!`}
               </p>
             ) : wonByGuess ? (
-              <p className="text-muted-foreground mt-2">
-                Guessed correctly in {winner.attempts} attempt{winner.attempts !== 1 ? "s" : ""}
+              <p className={`${theme.text} font-bold text-lg`}>
+                Guessed correctly in {winner.attempts} attempts!
               </p>
             ) : (
-              <p className="text-muted-foreground mt-2">Round complete!</p>
+              <p className={`${theme.text} font-bold text-lg`}>Round complete!</p>
             )}
-            <p className="text-sm text-muted-foreground mt-1">
-              The number was{" "}
-              <span className="font-mono font-bold text-game-cyan">{gameState.targetNumber}</span>
+            <p className="text-sm text-muted-foreground mt-2 font-medium">
+              The number was <span className={`font-mono font-bold ${theme.text} text-xl`}>{gameState.targetNumber}</span>
             </p>
           </div>
 
-          <div className="bg-card rounded-xl p-5 shadow-sm mb-6 border border-border/50">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Leaderboard</p>
+          <div className="bg-card/50 backdrop-blur-xl rounded-2xl p-5 shadow-lg mb-6 border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4">Final Leaderboard</h3>
             <div className="space-y-2">
-              {[...gameState.players]
-                .sort((a, b) => b.score - a.score)
-                .map((player, i) => (
-                  <div
-                    key={player.id}
-                    className={`flex items-center justify-between rounded-lg px-4 py-2.5 ${
-                      player.id === winner.id ? "bg-game-cyan/10 border border-game-cyan/20" : "bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-mono text-muted-foreground w-5">#{i + 1}</span>
-                      <span className="font-medium">{player.name}</span>
-                    </div>
-                    <span className="font-mono font-bold text-game-amber">{player.score} pts</span>
-                  </div>
-                ))}
+              {[...gameState.players].sort((a,b) => b.score - a.score).map((player, i) => (
+                <div key={player.id} className={`flex justify-between items-center bg-black/40 p-3 rounded-lg border ${player.id === playerId ? theme.border : 'border-white/5'}`}>
+                  <span className="font-medium text-white/90 truncate mr-2">
+                    <span className="text-muted-foreground mr-2 font-mono">#{i+1}</span>
+                    {player.name} {player.id === playerId ? "(You)" : ""}
+                  </span>
+                  <span className={`font-bold ${theme.text}`}>{player.score} pts</span>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={() => setShowLeaveConfirm(true)}
-              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 font-bold text-sm transition-all active:scale-[0.97]"
+              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-[0.97]"
             >
               <LogOut className="h-4 w-4" />
-              Leave
+              Menu
             </button>
             {isHost && (
-              <Button onClick={onRestart} className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark">
-                <RotateCcw className="h-4 w-4 mr-2" />
+              <Button 
+                onClick={onRestart} 
+                className={`flex-1 h-14 font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
+              >
+                <RotateCcw className="h-5 w-5 mr-2" />
                 Play Again
               </Button>
             )}
           </div>
-          <div className="flex gap-3 mt-4">
-            <Button variant="outline" onClick={() => setShowSettings(true)} className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 text-muted-foreground hover:text-white">
-              <Settings2 className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </div>
           {!isHost && (
-            <p className="text-sm text-muted-foreground mt-4">Waiting for host to restart…</p>
+            <p className="text-sm text-muted-foreground mt-4 animate-pulse">Waiting for host to restart…</p>
           )}
-
-          <RoomSettingsModal
-            open={showSettings}
-            onClose={() => setShowSettings(false)}
-            settings={{
-              maxRange: gameState.maxRange,
-              timerEnabled: gameState.timerEnabled ?? false,
-              timerDuration: gameState.timerDuration ?? 15000,
-              maxHearts: gameState.maxHearts ?? 3,
-            }}
-            onSettingsChange={onUpdateSettings}
-            readOnly={!isHost}
-          />
         </div>
+        
         <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
 
-        {/* Leave confirm — winner screen */}
         <LeaveConfirmModal
           open={showLeaveConfirm}
-          title="Leave the Game?"
-          message="Are you sure you want to leave? You can play again or check scores before leaving."
-          confirmLabel="Yes, Leave"
           onCancel={() => setShowLeaveConfirm(false)}
-          onConfirm={() => { onLeave(); }}
+          onConfirm={() => { setShowLeaveConfirm(false); onLeave(); }}
         />
       </div>
     );
@@ -307,132 +289,75 @@ export function GameBoard({
   // Game in progress
   return (
     <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
-      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
+      <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4 px-2 md:px-0">
         <GlobalLogo className="hidden md:flex pointer-events-auto opacity-50 hover:opacity-100 transition-opacity" />
+        
+        <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+          {isHost && gameState.status !== 'playing' && (
+            <Button
+              onClick={() => setShowSettings(true)}
+              variant="outline"
+              size="icon"
+              className={`rounded-full w-10 h-10 md:w-11 md:h-11 bg-card/50 backdrop-blur-md border ${theme.border} ${theme.text} hover:${theme.primary} hover:${theme.textDark} transition-all active:scale-95`}
+              title="Match Settings"
+            >
+              <Settings2 className="h-5 w-5" />
+            </Button>
+          )}
+          <button
+            onClick={() => setShowLeaveConfirmEarly(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-white/10 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all active:scale-95 z-50 pointer-events-auto shadow-lg"
+          >
+            <LogOut className="w-5 h-5 md:w-4 md:h-4" /> <span className="text-sm font-bold">Leave</span>
+          </button>
+        </div>
       </div>
+
+      <div className={`absolute top-[-10%] right-[-10%] w-[500px] h-[500px] ${theme.bgMuted} rounded-full blur-[120px] pointer-events-none opacity-40 animate-pulse`} />
+
       <div className="w-full max-w-md shrink-0 z-10 my-auto py-2 relative">
-        {/* Header */}
         <div className="text-center mb-6 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-            Round {gameState.round} · Room {gameState.roomCode}
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+            Round {gameState.round} <span className="mx-1 opacity-30">•</span> Room {gameState.roomCode}
           </p>
-          <p className="text-lg font-semibold flex items-center justify-center gap-2">
-            <span>Guess between{" "}
-              <span className="font-mono text-game-cyan">{gameState.minRange}</span>
-              {" – "}
-              <span className="font-mono text-game-cyan">{gameState.maxRange}</span>
-            </span>
-            {onLeaveEarly && (
-              <button 
-                onClick={() => setShowLeaveConfirmEarly(true)}
-                className="ml-2 p-1.5 rounded-md bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all active:scale-90"
-                title="Leave Match Early"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-          </p>
+          <h2 className="text-2xl md:text-3xl font-black text-white flex items-center justify-center gap-2 drop-shadow-md">
+            Guess between <span className={`font-mono ${theme.text} text-3xl md:text-4xl`}>{gameState.minRange} – {gameState.maxRange}</span>
+          </h2>
         </div>
 
-        {/* Turn indicator */}
-        <div
-          className={`rounded-xl p-4 mb-6 text-center transition-colors border relative overflow-hidden ${
+        <div className={`rounded-2xl p-4 md:p-5 mb-4 text-center transition-all duration-500 border relative overflow-hidden ${
             isMyTurn
-              ? "bg-game-cyan/10 border-game-cyan/30 shadow-[0_0_15px_rgba(0,229,255,0.1)]"
+              ? `${theme.bgMuted} ${theme.border} ${theme.glow}`
               : "bg-muted/30 border-border/50"
           }`}
         >
-          <p className={`text-sm font-bold tracking-wide ${isMyTurn ? "text-game-cyan" : "text-muted-foreground"}`}>
+          <div className={`absolute inset-0 bg-gradient-to-r from-transparent ${isMyTurn ? (mode === 'ai' ? 'via-game-amber/5' : 'via-game-cyan/5') : 'via-transparent'} to-transparent animate-shimmer scale-[2] pointer-events-none`} />
+          <p className={`text-sm font-black tracking-widest uppercase mb-1 relative z-10 ${isMyTurn ? theme.text : "text-muted-foreground"}`}>
             {isMyTurn ? "⚡ YOUR TURN!" : `${currentTurnPlayer?.name.toUpperCase()}'S TURN`}
           </p>
-          {gameState.timerEnabled !== false && (
-            <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} duration={gameState.timerDuration ?? 15000} />
-          )}
+          <TurnTimer deadline={gameState.turnDeadline} isActive={gameState.status === 'playing'} duration={gameState.timerDuration ?? 15000} mode={mode} />
         </div>
 
-        {/* My guesses (private) */}
-        {myPlayer && myPlayer.guesses.length > 0 && (
-          <div className="bg-card rounded-xl p-4 shadow-sm mb-4 border border-border/50 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              Your guesses
-            </p>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {myPlayer.guesses.map((g, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm"
-                >
-                  <span className="font-mono font-medium">{g.value}</span>
-                  <span className="flex items-center gap-1 font-medium">
-                    {g.hint === "higher" && (
-                      <>
-                        <ArrowUp className="h-3.5 w-3.5 hint-higher" />
-                        <span className="hint-higher">Higher</span>
-                      </>
-                    )}
-                    {g.hint === "lower" && (
-                      <>
-                        <ArrowDown className="h-3.5 w-3.5 hint-lower" />
-                        <span className="hint-lower">Lower</span>
-                      </>
-                    )}
-                    {g.hint === "correct" && (
-                      <span className="hint-correct">✓ Correct!</span>
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Player scores */}
-        <div className="bg-card rounded-xl p-4 shadow-sm mb-6 border border-border/50">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-            Players
-          </p>
-          <div className="space-y-1.5">
-            {gameState.players.map((player, i) => {
-              const maxHearts = gameState.maxHearts ?? 3;
+        <div className="bg-card/40 backdrop-blur-xl rounded-2xl p-4 md:p-6 mb-6 border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-white/5 to-transparent" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 mb-4 px-1">Active Players</h3>
+          <div className="space-y-2.5">
+            {gameState.players.map((player) => {
               const playerHearts = player.hearts ?? maxHearts;
               return (
-                <div
-                  key={player.id}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
-                    i === gameState.currentTurnIndex
-                      ? "bg-game-cyan/10 ring-1 ring-game-cyan/20"
-                      : player.isEliminated
-                        ? "bg-black/30 opacity-50 grayscale"
-                        : "bg-muted/40"
+                <div key={player.id} className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition-all ${
+                    player.id === playerId ? `${theme.bgMuted} ring-1 ${theme.ring}` : player.isEliminated ? "bg-black/30 opacity-50 grayscale" : "bg-muted/40"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {i === gameState.currentTurnIndex && !player.isEliminated && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse-glow shrink-0" />
-                    )}
-                    <span className={`font-medium truncate ${
-                      player.id === playerId ? "text-game-cyan" : ""
-                    } ${player.isEliminated ? "line-through" : ""}`}>
-                      {player.name}
-                      {player.id === playerId && " (you)"}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={`w-2 h-2 rounded-full ${player.id === currentTurnPlayer?.id ? "bg-green-400 animate-pulse" : "bg-muted-foreground/30"}`} />
+                    <span className={`font-medium truncate ${player.id === playerId ? theme.text : "text-white/80"}`}>
+                      {player.name} {player.id === playerId && "(you)"}
                     </span>
-                    {player.isEliminated && (
-                      <span className="text-[9px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1 shrink-0">
-                        Out
-                      </span>
-                    )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Hearts */}
-                    {!player.isEliminated && (
-                      <HeartsDisplay hearts={playerHearts} maxHearts={maxHearts} size="sm" />
-                    )}
-                    {player.isEliminated && (
-                      <span className="text-sm">💀</span>
-                    )}
-                    <span className="font-mono font-bold text-game-amber text-xs">
-                      {player.score}pts
-                    </span>
+                  <div className="flex items-center gap-4 shrink-0">
+                    {!player.isEliminated ? <HeartsDisplay hearts={playerHearts} maxHearts={maxHearts} size="sm" /> : <span className="text-[10px] uppercase font-bold text-red-500/70 tracking-tighter uppercase line-through">Out</span>}
+                    <span className={`font-mono font-bold ${theme.text}`}>{player.score}pts</span>
                   </div>
                 </div>
               );
@@ -440,50 +365,95 @@ export function GameBoard({
           </div>
         </div>
 
-        {/* Input */}
-        {isMyTurn && (
-          <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                min={gameState.minRange}
-                max={gameState.maxRange}
-                placeholder={`Your guess (${gameState.minRange}-${gameState.maxRange})`}
-                value={guessInput}
-                onChange={(e) => {
-                  setGuessInput(e.target.value);
-                  setInputError("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmitGuess()}
-                className="h-12 text-base font-mono bg-card/50 border-border/50"
-                autoFocus
-              />
+        {myPlayer && myPlayer.guesses.length > 0 && (
+          <div className="bg-card/50 backdrop-blur-md rounded-2xl p-4 mb-6 border border-white/5 opacity-0 animate-fade-in-up shadow-inner relative overflow-hidden" style={{ animationDelay: "0.1s" }}>
+            <div className="flex flex-col-reverse gap-2 max-h-40 overflow-y-auto stylish-scrollbar pr-1 relative z-10">
+              {[...myPlayer.guesses].reverse().map((g, idx) => (
+                <div key={g.timestamp || idx} className="flex items-center justify-between rounded-xl bg-black/40 px-4 py-3 text-sm border border-white/5 group hover:bg-black/60 transition-colors">
+                  <span className="font-mono font-black text-white group-hover:scale-110 transition-transform">{g.value}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`flex items-center gap-1.5 font-black text-[10px] uppercase tracking-widest ${g.hint === 'higher' ? 'text-red-400' : 'text-blue-400'}`}>
+                      {g.hint === "higher" ? (
+                        <><ArrowUp className="h-3.5 w-3.5" /> Higher</>
+                      ) : (
+                        <><ArrowDown className="h-3.5 w-3.5" /> Lower</>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
+          <div className="flex gap-2 group relative">
+            <div className={`absolute -inset-1 bg-gradient-to-r ${isMyTurn ? (mode === 'ai' ? 'from-game-amber/40 to-game-amber/5' : 'from-game-cyan/40 to-game-cyan/5') : 'from-transparent to-transparent'} rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500`} />
+            <div className="relative flex-1 flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type="number"
+                  min={gameState.minRange}
+                  max={gameState.maxRange}
+                  placeholder={`Your guess (${gameState.minRange}-${gameState.maxRange})`}
+                  value={guessInput}
+                  onChange={(e) => {
+                    setGuessInput(e.target.value);
+                    setInputError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmitGuess()}
+                  className={`h-14 text-xl font-black bg-card/50 ${theme.border} text-white placeholder:text-white/20 rounded-xl focus-visible:ring-offset-0 focus-visible:${theme.ring} transition-all`}
+                  autoFocus={isMyTurn}
+                  disabled={!isMyTurn}
+                />
+                {inputError && (
+                  <p className="absolute -bottom-6 left-1 text-[10px] font-bold text-red-400 uppercase tracking-wider animate-in slide-in-from-top-1">
+                    {inputError}
+                  </p>
+                )}
+              </div>
               <Button
                 onClick={handleSubmitGuess}
-                className="h-12 px-6 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark"
+                disabled={!isMyTurn || !guessInput}
+                className={`h-14 px-8 text-lg font-black active:scale-[0.97] transition-all rounded-xl ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.accentGlow}`}
               >
                 Guess
               </Button>
             </div>
-            {inputError && (
-              <p className="text-sm text-destructive mt-2">{inputError}</p>
-            )}
           </div>
-        )}
+          
+          <div className="flex gap-2 justify-center pt-2">
+            <div className="px-5 py-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 flex flex-col items-center min-w-[100px] shadow-lg">
+               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5 opacity-60">Status</span>
+               <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isMyTurn ? 'bg-green-400 animate-pulse' : 'bg-muted-foreground/30'} shadow-[0_0_8px_rgba(74,222,128,0.4)]`} />
+                  <span className="text-[11px] font-black text-white uppercase tracking-tighter">{isMyTurn ? "Your Turn" : "Waiting"}</span>
+               </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-40 hover:opacity-100 transition-opacity" />
 
-      {/* Early-leave confirm modal (while mid-game) */}
+      <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-70" />
+
+      <RoomSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={{
+          maxRange: gameState.maxRange,
+          timerEnabled: gameState.timerEnabled ?? true,
+          timerDuration: gameState.timerDuration ?? 15000,
+          maxHearts: gameState.maxHearts ?? 3
+        }}
+        onSettingsChange={onUpdateSettings}
+      />
+
       <LeaveConfirmModal
         open={showLeaveConfirmEarly}
-        title="Abandon the Match?"
-        message="If you leave now, you'll forfeit this round and your opponent will win. Are you sure?"
-        confirmLabel="Yes, Abandon Match"
         onCancel={() => setShowLeaveConfirmEarly(false)}
-        onConfirm={() => {
-          if (onLeaveEarly) onLeaveEarly();
-        }}
+        onConfirm={() => { setShowLeaveConfirmEarly(false); if (onLeaveEarly) onLeaveEarly(); else onLeave(); }}
       />
     </div>
   );
 }
+

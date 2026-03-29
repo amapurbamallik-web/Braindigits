@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Bot, HelpCircle, X, Settings2, Instagram, Linkedin, Facebook, Twitter, Github, Mail, UserCircle, Trophy, LogOut, UserPlus } from "lucide-react";
+import { Users, Bot, HelpCircle, X, Settings2, Instagram, Linkedin, Facebook, Twitter, Github, Mail, UserCircle, Trophy, LogOut, UserPlus, Gamepad2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { LogoutConfirmModal } from "./LogoutConfirmModal";
 import { InviteModal } from "./InviteModal";
 
 interface ModeSelectionProps {
-  onSelectMode: (mode: "friends" | "ai") => void;
+  onSelectMode: (mode: "friends" | "ai" | "arcade") => void;
   settings: GameSettings;
   onSettingsChange: (s: GameSettings) => void;
 }
@@ -216,6 +216,16 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button
+            onClick={() => onSelectMode("arcade")}
+            className="w-full h-16 text-lg font-black tracking-widest active:scale-[0.97] transition-all bg-gradient-to-r from-game-purple via-fuchsia-500 to-pink-500 hover:shadow-[0_0_30px_rgba(217,70,239,0.6)] text-white shadow-[0_0_20px_rgba(171,71,188,0.4)] border border-white/20 relative overflow-hidden group"
+            size="lg"
+          >
+            <div className="absolute inset-0 bg-white/20 -translate-x-[150%] skew-x-12 group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out" />
+            <Gamepad2 className="h-6 w-6 mr-3 drop-shadow-md" />
+            ARCADE MODE
+          </Button>
+
+          <Button
             onClick={() => onSelectMode("friends")}
             className="w-full h-14 text-base font-semibold active:scale-[0.97] transition-all bg-game-cyan hover:bg-game-cyan/90 text-game-dark shadow-[0_0_15px_rgba(0,229,255,0.2)]"
             size="lg"
@@ -226,7 +236,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           
           <Button
             onClick={() => onSelectMode("ai")}
-            className="w-full h-14 text-base font-semibold active:scale-[0.97] transition-all bg-game-purple hover:bg-game-purple/90 text-white shadow-[0_0_15px_rgba(171,71,188,0.2)]"
+            className="w-full h-14 text-base font-bold active:scale-[0.97] transition-all bg-game-amber hover:bg-game-amber/90 text-game-dark shadow-[0_0_15px_rgba(251,191,36,0.3)]"
             size="lg"
           >
             <Bot className="h-5 w-5 mr-2" />

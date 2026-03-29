@@ -10,6 +10,9 @@ export interface UserProfile {
   total_games: number;
   ai_wins: number;
   avatar_url?: string;
+  arcade_max_level?: number;
+  arcade_score?: number;
+  arcade_stars?: Record<string, number>;
   created_at?: string;
 }
 
@@ -75,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await (supabase as any)
         .from("profiles")
-        .select("id, username, total_wins, total_games, ai_wins, avatar_url, created_at")
+        .select("id, username, total_wins, total_games, ai_wins, avatar_url, arcade_max_level, arcade_score, arcade_stars, created_at")
         .eq("id", userId)
         .single();
       

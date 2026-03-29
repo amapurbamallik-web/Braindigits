@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     total_games INTEGER DEFAULT 0 NOT NULL,
     ai_wins INTEGER DEFAULT 0 NOT NULL,
     avatar_url TEXT,
+    arcade_max_level INTEGER DEFAULT 0 NOT NULL,
+    arcade_score INTEGER DEFAULT 0 NOT NULL,
+    arcade_stars JSONB DEFAULT '{}'::jsonb NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

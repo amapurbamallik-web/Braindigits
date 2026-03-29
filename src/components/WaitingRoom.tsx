@@ -6,6 +6,7 @@ import { RoomSettingsModal } from "./RoomSettingsModal";
 import { FriendsListModal } from "./FriendsListModal";
 import { InviteModal } from "./InviteModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { getThemeClasses, GameMode } from "@/lib/theme-logic";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -18,10 +19,12 @@ interface WaitingRoomProps {
   onLeave: () => void;
   onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
   onKick?: (playerId: string) => void;
+  mode?: GameMode;
 }
 
-export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings, onKick }: WaitingRoomProps) {
+export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings, onKick, mode = 'friends' }: WaitingRoomProps) {
   const { user, profile } = useAuth();
+  const theme = getThemeClasses(mode);
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
@@ -90,20 +93,22 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
 
       <div className="w-full max-w-md my-auto py-6 shrink-0 relative z-10 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
         <div className="absolute top-0 right-0 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-          <Button
-            onClick={() => setShowSettings(true)}
-            variant="ghost"
-            size="icon"
-            className="rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:bg-game-cyan/10 hover:text-game-cyan hover:border-game-cyan/30 shadow-lg active:scale-95"
-            title="Room Settings"
-          >
-            <Settings2 className="h-5 w-5" />
-          </Button>
+          {!gameState.isArcade && (
+            <Button
+              onClick={() => setShowSettings(true)}
+              variant="ghost"
+              size="icon"
+              className={`rounded-full bg-card/50 backdrop-blur-md border ${theme.border} text-foreground hover:${theme.bgMuted} hover:${theme.text} hover:${theme.border} shadow-lg active:scale-95`}
+              title="Room Settings"
+            >
+              <Settings2 className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-game-cyan/10 px-4 py-1.5 mb-6">
-          <Users className="h-4 w-4 text-game-cyan" />
-          <span className="text-sm font-medium text-game-cyan">Waiting for players</span>
+        <div className={`inline-flex items-center gap-2 rounded-full ${theme.bgMuted} px-4 py-1.5 mb-6`}>
+          <Users className={`h-4 w-4 ${theme.text}`} />
+          <span className={`text-sm font-medium ${theme.text}`}>Waiting for players</span>
         </div>
 
         <div className="mb-8">
@@ -112,11 +117,11 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
             onClick={copyCode}
             className="inline-flex items-center gap-3 rounded-xl bg-card px-6 py-4 shadow-md hover:shadow-lg transition-shadow active:scale-[0.97] border border-border/50"
           >
-            <span className="font-mono text-3xl font-bold tracking-[0.25em] text-game-cyan">
+            <span className={`font-mono text-3xl font-bold tracking-[0.25em] ${theme.text}`}>
               {gameState.roomCode}
             </span>
             {copied ? (
-              <Check className="h-5 w-5 text-game-success" />
+              <Check className="h-5 w-5 text-green-400" />
             ) : (
               <Copy className="h-5 w-5 text-muted-foreground" />
             )}
@@ -127,7 +132,7 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           <Button
             onClick={() => setShowFriends(true)}
             variant="outline"
-            className="flex-1 h-12 border-game-purple/30 text-game-purple hover:bg-game-purple/10 font-bold active:scale-[0.97]"
+            className={`flex-1 h-12 border-game-purple/30 text-game-purple hover:bg-game-purple/10 font-bold active:scale-[0.97]`}
           >
             <Users className="w-5 h-5 mr-2" />
             Friends
@@ -135,7 +140,7 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           <Button
             onClick={() => setShowInvite(true)}
             variant="outline"
-            className="flex-1 h-12 border-game-cyan/30 text-game-cyan hover:bg-game-cyan/10 font-bold active:scale-[0.97]"
+            className={`flex-1 h-12 ${theme.border} ${theme.text} hover:${theme.bgMuted} font-bold active:scale-[0.97]`}
           >
             <Share2 className="w-5 h-5 mr-2" />
             Share
@@ -154,12 +159,12 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
                 style={{ animationDelay: `${0.2 + i * 0.1}s` }}
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shrink-0">
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${mode === 'ai' ? 'from-game-amber/20 to-game-amber/40' : 'from-game-cyan/20 to-game-purple/20'} border border-white/10 flex items-center justify-center shrink-0`}>
                     <span className="text-[10px] font-black text-white/80">{player.name?.substring(0,2).toUpperCase() || "??"}</span>
                   </div>
-                  <span className="font-semibold text-sm truncate">{player.name}</span>
+                  <span className={`font-semibold text-sm truncate ${player.id === user?.id ? theme.text : ''}`}>{player.name}</span>
                   {player.isHost && (
-                    <span className="text-[10px] font-bold text-game-amber bg-game-amber/10 rounded-full px-2 py-0.5 shrink-0">
+                    <span className="text-[10px] font-bold text-white bg-white/10 rounded-full px-2 py-0.5 shrink-0 border border-white/10">
                       Host
                     </span>
                   )}
@@ -186,12 +191,12 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
                     className={`ml-2 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all active:scale-90 ${
                       addedFriends.has(player.name)
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'
-                        : 'bg-game-cyan/10 hover:bg-game-cyan/20 text-game-cyan border border-game-cyan/20 hover:border-game-cyan/40'
+                        : `${theme.bgMuted} hover:${theme.primary}/20 ${theme.text} border ${theme.border} hover:border-${theme.text}/40`
                     }`}
                     title={addedFriends.has(player.name) ? 'Request sent!' : 'Add as Friend'}
                   >
                     {addingFriend === player.name ? (
-                      <span className="animate-spin w-3 h-3 border border-game-cyan border-t-transparent rounded-full" />
+                      <span className={`animate-spin w-3 h-3 border border-current border-t-transparent rounded-full`} />
                     ) : addedFriends.has(player.name) ? (
                       <><Check className="w-3 h-3" /> Sent</>  
                     ) : (
@@ -215,10 +220,10 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           {isHost && (
             <Button
               onClick={onStart}
-              disabled={gameState.players.length < 2}
-              className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark"
+              disabled={gameState.players.length < (mode === 'ai' ? 1 : 2)}
+              className={`flex-1 h-12 font-black uppercase tracking-wider active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
             >
-              {gameState.players.length < 2 ? "Need 2+ players" : "Start Game"}
+              {gameState.players.length < (mode === 'ai' ? 1 : 2) ? (mode === 'ai' ? "Ready?" : "Waiting...") : "Start Game"}
             </Button>
           )}
         </div>

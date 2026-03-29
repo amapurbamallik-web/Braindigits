@@ -1,5 +1,5 @@
 import { UserProfile, useAuth } from "@/contexts/AuthContext";
-import { X, Trophy, Swords, Zap, LogOut, Star, Shield, Camera, Loader2, ImagePlus, Pencil } from "lucide-react";
+import { X, Trophy, Swords, Zap, LogOut, Star, Shield, Camera, Loader2, ImagePlus, Pencil, Bot } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -43,7 +43,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
     ? Math.round(((profile.total_wins + profile.ai_wins) / totalGames) * 100)
     : 0;
 
-  const username = profile?.username || "Unknown Gamer";
+  const username = profile?.username || "GUEST PLAYER";
   const rank = getRankInfo(totalGames);
   const RankIcon = rank.icon;
 
@@ -55,6 +55,8 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
     ? 100
     : Math.min(100, Math.max(0, ((totalGames - previousMax) / (nextRank.max - previousMax)) * 100));
 
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'EST. 2024';
+
   const updateAvatar = async (val: string) => {
     if (!profile) return;
     playSfx('click');
@@ -63,7 +65,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
     try {
       const { error } = await (supabase as any).from("profiles").update({ avatar_url: val }).eq("id", profile.id);
       if (error) throw error;
-      toast.success("Avatar saved! 🚀");
+      toast.success("Identity updated! 🚀");
     } catch (err: any) {
       toast.error(err.message || "Failed to save avatar.");
       updateProfileField({ avatar_url: profile.avatar_url });
@@ -79,7 +81,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
     const objectUrl = URL.createObjectURL(file);
     createImageBitmap(file).then((bitmap) => {
       URL.revokeObjectURL(objectUrl);
-      const AVATAR_SIZE = 80;
+      const AVATAR_SIZE = 120; // High res for dashboard
       const canvas = document.createElement("canvas");
       canvas.width = AVATAR_SIZE;
       canvas.height = AVATAR_SIZE;
@@ -92,227 +94,208 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
       ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
       ctx.drawImage(bitmap, sx, sy, srcSize, srcSize, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
       bitmap.close();
-      const compressed = canvas.toDataURL("image/webp", 0.5);
+      const compressed = canvas.toDataURL("image/webp", 0.7);
       updateAvatar(compressed);
     }).catch(() => {
       setUploading(false);
-      toast.error("Could not read image file.");
+      toast.error("Format not supported.");
     });
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-[#0a0a0f] rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10 animate-in zoom-in-95 duration-300 relative overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-500 overflow-hidden">
+      <div className="w-full max-w-sm bg-[#06060a] rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,1)] border border-white/[0.08] animate-in zoom-in-95 duration-300 relative overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh]">
+        
+        {/* Cinematic Backdrop Glow */}
+        <div className={`absolute -top-20 -left-20 w-64 h-64 ${rank.bg} blur-[100px] opacity-30 pointer-events-none`} />
+        <div className={`absolute top-40 -right-20 w-64 h-64 bg-game-cyan/10 blur-[100px] opacity-10 pointer-events-none`} />
 
-        {/* ── Header banner ── */}
-        <div className={`h-28 w-full bg-gradient-to-br ${rank.bg} to-transparent border-b ${rank.border} relative shrink-0`}>
-          {/* Close */}
+        {/* ── Dashboard Header ── */}
+        <div className="relative pt-6 pb-3 px-6 flex flex-col items-center shrink-0">
           <button
             onClick={() => isEditingAvatar ? setIsEditingAvatar(false) : onClose()}
-            className="absolute top-4 right-4 z-20 p-1.5 rounded-full hover:bg-black/40 text-white/70 hover:text-white transition-all active:scale-95"
+            className="absolute top-5 right-5 z-20 p-2 rounded-full bg-white/[0.03] hover:bg-white/[0.08] text-white/50 hover:text-white transition-all active:scale-90"
           >
             <X className="h-5 w-5" />
           </button>
 
-          {/* Avatar bubble — overflows the banner into the content */}
-          <div className="absolute -bottom-11 left-1/2 -translate-x-1/2 z-30">
-            <div className="relative">
-              {/* Avatar circle */}
-              <div className={`w-[88px] h-[88px] rounded-full bg-[#0a0a0f] border-4 ${rank.border} shadow-[0_0_20px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-hidden`}>
-                {profile?.avatar_url && profile.avatar_url.startsWith('data:image') ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : profile?.avatar_url ? (
-                  <span className="text-4xl leading-none">{profile.avatar_url}</span>
-                ) : (
-                  <span className={`text-2xl font-black ${rank.color}`}>{username.substring(0, 2).toUpperCase()}</span>
-                )}
-              </div>
-
-              {/* Camera hover overlay — covers full circle, separate from overflow:hidden */}
-              {!readOnly && (
-                <button
-                  onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
-                  title="Change avatar"
-                  aria-label="Change avatar"
-                  className="absolute inset-0 rounded-full z-10 hover:bg-black/55 active:bg-black/70 transition-colors duration-150 flex items-center justify-center group"
-                >
-                  <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              )}
-
-              {/* Pencil badge — z-20, always on top and clickable */}
-              {!readOnly && (
-                <button
-                  onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
-                  title="Change avatar"
-                  aria-label="Change avatar"
-                  className={`absolute -bottom-0.5 -right-0.5 z-20 w-7 h-7 rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center shadow-md cursor-pointer hover:scale-125 active:scale-90 transition-transform`}
-                >
-                  <Pencil className={`w-3.5 h-3.5 ${rank.color}`} />
-                </button>
-              )}
-            </div>
+          {/* Avatar Hero */}
+          <div className="relative mb-3">
+             <div className={`w-[84px] h-[84px] rounded-full p-0.5 bg-gradient-to-tr from-white/10 to-transparent shadow-[0_10px_20px_rgba(0,0,0,0.6)] relative z-10`}>
+                <div className={`w-full h-full rounded-full bg-[#0a0a0f] border-2 ${rank.border} flex items-center justify-center overflow-hidden relative`}>
+                  {profile?.avatar_url && profile.avatar_url.startsWith('data:image') ? (
+                    <img src={profile.avatar_url} alt="Profile Avatar" className="w-full h-full object-cover transition-transform hover:scale-110 duration-700" />
+                  ) : profile?.avatar_url ? (
+                    <span className="text-4xl leading-none">{profile.avatar_url}</span>
+                  ) : (
+                    <span className={`text-2xl font-black ${rank.color}`}>{username.substring(0, 2).toUpperCase()}</span>
+                  )}
+                  
+                  {!readOnly && (
+                    <button
+                      onClick={() => { playSfx('click'); setIsEditingAvatar(!isEditingAvatar); }}
+                      className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 backdrop-blur-[2px]"
+                    >
+                      <Camera className="w-4 h-4 text-white" />
+                      <span className="text-[8px] font-black text-white uppercase tracking-widest">EDIT</span>
+                    </button>
+                  )}
+                </div>
+             </div>
+             {!isEditingAvatar && (
+               <div className={`absolute -bottom-0.5 -right-0.5 z-20 bg-game-dark border-2 ${rank.border} p-1 rounded-full shadow-xl animate-bounce-subtle`}>
+                 <RankIcon className={`w-3.5 h-3.5 ${rank.color}`} />
+               </div>
+             )}
           </div>
+
+          <h1 className="text-xl font-black text-white tracking-tight mb-1">{username}</h1>
+          <div className="flex gap-2 mb-1.5 opacity-90">
+             <span className={`px-2.5 py-0.5 rounded-full ${rank.bg} ${rank.border} border text-[9px] font-black uppercase tracking-[0.1em] ${rank.color}`}>
+               {rank.name} TIER
+             </span>
+             {profile?.arcade_max_level && profile.arcade_max_level > 20 && (
+               <span className={`px-2.5 py-0.5 rounded-full bg-game-purple/10 border border-game-purple/30 text-[9px] font-black uppercase tracking-[0.1em] text-game-purple`}>
+                 TOP SURVIVOR
+               </span>
+             )}
+          </div>
+          <p className="text-[9px] text-white/30 font-bold uppercase tracking-[0.2em] font-mono">EST. {memberSince}</p>
         </div>
 
-        {/* ── Body ── */}
-        <div className="pt-14 px-6 pb-5 overflow-y-auto custom-scrollbar flex-1">
-
+        {/* ── Scrollable Dashboard Content ── */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6 space-y-4">
+          
           {isEditingAvatar ? (
-            <div className="animate-in slide-in-from-right-8 duration-300">
-              <h3 className="text-lg font-bold text-white text-center mb-1">Choose Your Avatar</h3>
-              <p className="text-xs text-muted-foreground text-center mb-4">
-                Pick an arcade avatar or upload a custom image.
-              </p>
-
-              {/* Arcade grid */}
-              <div className="grid grid-cols-6 gap-2 mb-4">
-                {ARCADE_AVATARS.map(emoji => (
-                  <button
-                    key={emoji}
-                    onClick={() => updateAvatar(emoji)}
-                    title={emoji}
-                    className={`h-11 rounded-xl text-2xl active:scale-90 transition-all flex items-center justify-center border ${
-                      profile?.avatar_url === emoji
-                        ? 'bg-game-cyan/20 border-game-cyan shadow-[0_0_8px_rgba(0,229,255,0.3)]'
-                        : 'bg-white/5 hover:bg-white/15 border-white/5 hover:border-game-cyan/30'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-
-              {/* Upload */}
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/webp"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                disabled={uploading}
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-11 bg-game-cyan/10 hover:bg-game-cyan/20 text-game-cyan border border-game-cyan/30 font-bold rounded-xl mb-3"
-                disabled={uploading}
-              >
-                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ImagePlus className="w-4 h-4 mr-2" />}
-                {uploading ? "Compressing…" : "Upload Custom Image"}
-              </Button>
-              <button
-                onClick={() => setIsEditingAvatar(false)}
-                className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/5 text-muted-foreground font-bold text-xs tracking-wide rounded-xl transition-all"
-              >
-                CANCEL
-              </button>
-            </div>
-          ) : (
-            <div className="animate-in slide-in-from-left-8 duration-300">
-              <h2 className="text-xl font-extrabold text-white mb-1 tracking-tight text-center">{username}</h2>
-
-              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${rank.border} ${rank.bg} ${rank.color} text-[10px] font-black uppercase tracking-widest mb-5 shadow-lg mx-auto flex justify-center`}>
-                <RankIcon className="w-3.5 h-3.5" />
-                {rank.name} Tier
-              </div>
-
-              {!profile && (
-                <div className="mb-4 text-center bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-xl font-medium">
-                  Profile stats unavailable. Check network or setup.
-                </div>
-              )}
-
-              {/* Rank progress */}
-              <div className="mb-6 relative rounded-[1.5rem] overflow-hidden p-4 border border-white/10 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-md shadow-xl group">
-                <div className="absolute inset-0 bg-gradient-to-r from-game-cyan/5 via-transparent to-game-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="relative z-10">
-                  <div className="flex justify-between items-end mb-3">
-                    <div className="text-left">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground/80 tracking-widest mb-0.5 block">Current Rank</span>
-                      <span className={`text-sm font-black uppercase tracking-wider flex items-center gap-1.5 ${rank.color}`}>
-                        <RankIcon className="w-4 h-4" /> {rank.name}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground/80 tracking-widest mb-0.5 block">Next Tier</span>
-                      <span className={`text-sm font-black uppercase tracking-wider ${nextRank.color}`}>
-                        {nextRank.name === rank.name ? 'MAX OUT' : nextRank.name}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-3 w-full bg-[#050508] rounded-full overflow-hidden border border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] relative">
-                    <div
-                      className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-game-cyan via-blue-500 to-game-purple relative overflow-hidden"
-                      style={{ width: `${progressToNext}%` }}
-                    >
-                      <div className="absolute top-0 left-0 w-full h-1/2 bg-white/20 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="mt-2.5 text-[10px] text-center text-muted-foreground/80 font-bold tracking-widest uppercase">
-                    {nextRank.name === rank.name
-                      ? 'MAXIMUM PRESTIGE UNLOCKED'
-                      : <span className="text-white/90">{totalGames} <span className="text-muted-foreground/50 mx-0.5">/</span> {nextRank.max} <span className="font-medium text-muted-foreground">matches</span></span>
-                    }
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats grid */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-gradient-to-br from-white/10 to-transparent p-5 rounded-[1.5rem] border-t border-t-white/10 border-l border-l-white/10 flex flex-col items-center justify-center hover:bg-white/10 hover:-translate-y-1 shadow-lg hover:shadow-[0_0_20px_rgba(251,191,36,0.15)] transition-all cursor-default relative overflow-hidden group">
-                  <div className="absolute -inset-4 bg-game-amber/10 blur-[20px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                  <Trophy className="h-7 w-7 text-game-amber mb-2 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] z-10 transition-transform group-hover:scale-110" />
-                  <p className="text-3xl font-black text-white z-10 tracking-tight">{profile?.total_wins || 0}</p>
-                  <p className="text-[10px] text-game-amber/80 uppercase tracking-widest font-extrabold mt-1 z-10">PvP Wins</p>
-                </div>
-
-                <div className="bg-gradient-to-bl from-white/10 to-transparent p-5 rounded-[1.5rem] border-t border-t-white/10 border-r border-r-white/10 flex flex-col items-center justify-center hover:bg-white/10 hover:-translate-y-1 shadow-lg hover:shadow-[0_0_20px_rgba(171,71,188,0.15)] transition-all cursor-default relative overflow-hidden group">
-                  <div className="absolute -inset-4 bg-game-purple/10 blur-[20px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                  <Zap className="h-7 w-7 text-game-purple mb-2 drop-shadow-[0_0_10px_rgba(171,71,188,0.8)] z-10 transition-transform group-hover:scale-110" />
-                  <p className="text-3xl font-black text-white z-10 tracking-tight">{profile?.ai_wins || 0}</p>
-                  <p className="text-[10px] text-game-purple/80 uppercase tracking-widest font-extrabold mt-1 z-10">AI Wins</p>
-                </div>
-
-                <div className="bg-gradient-to-b from-white/10 to-black/40 p-5 rounded-[1.5rem] border border-white/10 flex justify-between items-center col-span-2 relative overflow-hidden group hover:bg-white/20 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(0,229,255,0.1)] transition-all cursor-default backdrop-blur-md">
-                  <div className="absolute right-[-10%] bottom-[-20%] w-40 h-40 bg-game-cyan/20 rounded-full blur-[50px] group-hover:bg-game-cyan/30 transition-all duration-700 pointer-events-none" />
-                  <div className="text-left z-10 relative">
-                    <p className="text-[11px] text-game-cyan uppercase tracking-widest font-extrabold mb-1">Global Accuracy</p>
-                    <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 tracking-tighter">{winRate}%</p>
-                  </div>
-                  <div className="w-14 h-14 rounded-full border-2 border-game-cyan/30 bg-game-dark/50 shadow-[inset_0_0_15px_rgba(0,229,255,0.2)] flex items-center justify-center shrink-0 group-hover:rotate-[15deg] group-hover:scale-110 transition-transform duration-500 relative z-10 backdrop-blur-xl">
-                    <Swords className="h-6 w-6 text-game-cyan drop-shadow-[0_0_15px_rgba(0,229,255,1)]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2">
-                {isConfirmingLogout ? (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
-                    <p className="text-sm font-bold text-center text-red-500 tracking-wide">Are you sure you want to log out?</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => { playSfx('click'); onLogout?.(); setIsConfirmingLogout(false); }} className="flex-1 h-10 bg-red-500 hover:bg-red-600 text-white font-bold text-xs tracking-wide rounded-xl active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]">YES</button>
-                      <button onClick={() => { playSfx('click'); setIsConfirmingLogout(false); }} className="flex-1 h-10 bg-white/10 hover:bg-white/20 text-white font-bold text-xs tracking-wide rounded-xl active:scale-[0.98] transition-all border border-white/10">NO</button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {onLogout && (
-                      <button onClick={() => { playSfx('click'); setIsConfirmingLogout(true); }} className="w-full h-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-500 font-bold text-xs tracking-wide rounded-2xl flex justify-center items-center gap-2 active:scale-[0.98] transition-all">
-                        <LogOut className="w-3.5 h-3.5" />
-                        LOG OUT
+             <div className="animate-in slide-in-from-bottom-6 duration-500 py-1">
+                <div className="bg-white/[0.03] border border-white/[0.05] rounded-[1.5rem] p-5">
+                  <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 text-center opacity-50">Profile Identity</h3>
+                  
+                  <div className="grid grid-cols-6 gap-1.5 mb-5">
+                    {ARCADE_AVATARS.map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => updateAvatar(emoji)}
+                        className={`h-10 rounded-xl text-xl active:scale-90 transition-all flex items-center justify-center border ${
+                          profile?.avatar_url === emoji
+                            ? 'bg-game-cyan/20 border-game-cyan shadow-[0_0_10px_rgba(0,229,255,0.4)]'
+                            : 'bg-white/5 hover:bg-white/10 border-white/5'
+                        }`}
+                      >
+                        {emoji}
                       </button>
-                    )}
-                    <button onClick={() => { playSfx('click'); onClose(); }} className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/5 text-white/90 hover:text-white font-bold text-xs tracking-wide rounded-2xl active:scale-[0.98] transition-all">
-                      CLOSE DASHBOARD
-                    </button>
-                  </>
-                )}
+                    ))}
+                  </div>
+
+                  <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} disabled={uploading}/>
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-11 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold rounded-xl mb-3"
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Pencil className="w-3.5 h-3.5 mr-2" />}
+                    {uploading ? "SYNCING..." : "Flash Media Upload"}
+                  </Button>
+                  
+                  <button onClick={() => setIsEditingAvatar(false)} className="w-full text-[9px] font-black text-white/40 uppercase tracking-[0.2em] hover:text-white py-1">
+                    RETURN TO DASHBOARD
+                  </button>
+                </div>
+             </div>
+          ) : (
+            <>
+              {/* Progression Section */}
+              <div className="relative rounded-[1.5rem] p-4 border border-white/[0.08] bg-white/[0.02] group overflow-hidden">
+                <div className="flex justify-between items-end mb-3">
+                  <div className="text-left">
+                    <span className="text-[9px] uppercase font-black text-white/30 tracking-[0.1em] block mb-0.5">Current Progress</span>
+                    <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${rank.color}`}>
+                      <RankIcon className="w-3.5 h-3.5" /> {rank.name}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] uppercase font-black text-white/30 tracking-[0.1em] block mb-0.5">Next Tier</span>
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${nextRank.color}`}>
+                      {nextRank.name === rank.name ? 'ELITE' : nextRank.name}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 relative mb-2">
+                   <div 
+                     className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-game-cyan via-blue-500 to-game-purple shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all duration-1000"
+                     style={{ width: `${progressToNext}%` }}
+                   >
+                     <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,rgba(255,255,255,0.05)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0.05)_75%,transparent_75%,transparent)] bg-[length:15px_15px] animate-shimmer" />
+                   </div>
+                </div>
+
+                <p className="text-[9px] text-center text-white/40 font-bold uppercase tracking-widest leading-none">
+                  {nextRank.name === rank.name 
+                    ? "MAX PRESTIGE" 
+                    : <><span className="text-white font-black">{totalGames}</span> / <span className="text-white/60">{nextRank.max}</span> MATCHES</>
+                  }
+                </p>
               </div>
-            </div>
+
+              {/* Stats Grid Matrix */}
+              <div className="grid grid-cols-3 gap-2">
+                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl flex flex-col items-center justify-center hover:bg-white/[0.06] transition-all group overflow-hidden relative">
+                    <Trophy className="w-4 h-4 text-game-amber mb-1" />
+                    <span className="text-base font-black text-white">{profile?.total_wins || 0}</span>
+                    <span className="text-[7px] font-black text-game-amber uppercase tracking-[0.1em] opacity-40">PvP Wins</span>
+                 </div>
+                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl flex flex-col items-center justify-center hover:bg-white/[0.06] transition-all group overflow-hidden relative">
+                    <Bot className="w-4 h-4 text-game-cyan mb-1" />
+                    <span className="text-base font-black text-white">{profile?.ai_wins || 0}</span>
+                    <span className="text-[7px] font-black text-game-cyan uppercase tracking-[0.1em] opacity-40">AI Wins</span>
+                 </div>
+                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl flex flex-col items-center justify-center hover:bg-white/[0.06] transition-all group overflow-hidden relative">
+                    <Zap className="w-4 h-4 text-game-purple mb-1" />
+                    <span className="text-base font-black text-white">{profile?.arcade_max_level || 0}</span>
+                    <span className="text-[7px] font-black text-game-purple uppercase tracking-[0.1em] opacity-40">Max Lv.</span>
+                 </div>
+              </div>
+
+              {/* accuracy large card */}
+              <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] p-4 rounded-[1.5rem] flex justify-between items-center relative overflow-hidden group">
+                <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-game-cyan/10 blur-[50px] pointer-events-none" />
+                <div className="z-10">
+                   <p className="text-[8px] text-game-cyan font-black uppercase tracking-[0.1em] mb-0.5 opacity-50">Precision Rating</p>
+                   <p className="text-4xl font-black text-white tracking-tighter">{winRate}<span className="text-base text-game-cyan">%</span></p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-game-cyan/10 border border-game-cyan/30 flex items-center justify-center rotate-6 group-hover:rotate-12 transition-transform shadow-[0_0_20px_rgba(0,229,255,0.05)]">
+                   <Swords className="w-6 h-6 text-game-cyan drop-shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
+                </div>
+              </div>
+
+              {/* Action Footer */}
+              <div className="space-y-2 pt-1">
+                 {isConfirmingLogout ? (
+                    <div className="flex gap-2 animate-in slide-in-from-top-2">
+                       <button onClick={() => { playSfx('click'); onLogout?.(); }} className="flex-1 h-11 bg-red-500 text-white font-black rounded-xl text-xs tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all">TERMINATE SESSION</button>
+                       <button onClick={() => setIsConfirmingLogout(false)} className="flex-1 h-11 bg-white/5 text-white/50 font-black rounded-xl text-xs tracking-widest active:scale-95 transition-all">ABORT</button>
+                    </div>
+                 ) : (
+                   <button 
+                     onClick={() => setIsConfirmingLogout(true)}
+                     className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-black text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-[0.98]"
+                   >
+                     <LogOut className="w-3.5 h-3.5" /> SECURE LOGOUT
+                   </button>
+                 )}
+                 <button 
+                   onClick={onClose} 
+                   className="w-full h-11 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white/50 font-black text-[9px] uppercase tracking-[0.2em] hover:text-white hover:bg-white/[0.06] transition-all"
+                 >
+                   Return to Games
+                 </button>
+              </div>
+            </>
           )}
         </div>
       </div>
     </div>
   );
 }
+
