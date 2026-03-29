@@ -18,6 +18,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
   const lastFinishedMatchId = useRef<string | null>(null);
 
   const initGame = useCallback(() => {
+    const maxHearts = settings.maxHearts ?? 3;
     const player: Player = {
       id: playerId,
       name: playerName || "Player",
@@ -27,6 +28,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       score: 0,
       isEliminated: false,
       missedTurns: 0,
+      hearts: maxHearts,
     };
     
     const aiPlayer: Player = {
@@ -38,6 +40,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       score: 0,
       isEliminated: false,
       missedTurns: 0,
+      hearts: maxHearts,
     };
 
     const state: GameState = {
@@ -52,7 +55,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       round: 1,
       turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
       timerEnabled: settings.timerEnabled,
-      timerDuration: settings.timerDuration
+      timerDuration: settings.timerDuration,
+      maxHearts,
     };
     
     aiStateRef.current = { min: 1, max: settings.maxRange };
@@ -147,18 +151,20 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         }, 1200 + Math.random() * 800) as unknown as number; // 1.2 to 2.0s
       }
 
-      // Enforce the 15-second deadline for EVERYONE
+      // Enforce the deadline for EVERYONE
       interval = window.setInterval(() => {
         setGameState((prev) => {
           if (prev && prev.status === 'playing' && prev.turnDeadline && Date.now() >= prev.turnDeadline) {
             const currentPlayer = prev.players[prev.currentTurnIndex];
             
-            const missedTurns = (currentPlayer.missedTurns || 0) + 1;
-            const isEliminated = missedTurns >= 3;
+            const maxHearts = prev.maxHearts ?? 3;
+            const currentHearts = currentPlayer.hearts ?? maxHearts;
+            const newHearts = Math.max(0, currentHearts - 1);
+            const isEliminated = newHearts <= 0;
 
             const updatedPlayers = prev.players.map((p) =>
               p.id === currentPlayer.id
-                ? { ...p, missedTurns, isEliminated }
+                ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 }
                 : p
             );
 
@@ -213,6 +219,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
   const restartGame = useCallback(() => {
     setGameState((prevState) => {
       if (!prevState) return prevState;
+      const maxHearts = prevState.maxHearts ?? 3;
       aiStateRef.current = { min: 1, max: 100 };
       return {
         ...prevState,
@@ -227,6 +234,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
           guesses: [],
           isEliminated: false,
           missedTurns: 0,
+          hearts: maxHearts,
         })),
         winnerId: null,
         round: prevState.round + 1,
@@ -247,6 +255,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         maxRange: newSettings.maxRange,
         timerEnabled: newSettings.timerEnabled,
         timerDuration: newSettings.timerDuration,
+        maxHearts: newSettings.maxHearts ?? 3,
       };
     });
   }, []);

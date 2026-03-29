@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Settings2, Volume2, VolumeX } from "lucide-react";
+import { X, Settings2, Volume2, VolumeX, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GameSettings } from "@/lib/game-types";
@@ -22,6 +22,7 @@ export function RoomSettingsModal({
 }: RoomSettingsModalProps) {
   const [customRangeInput, setCustomRangeInput] = useState("");
   const [customTimerInput, setCustomTimerInput] = useState("");
+  const [customHeartsInput, setCustomHeartsInput] = useState("");
   const { isSoundEnabled, toggleSound } = useAudio();
 
   if (!open) return null;
@@ -41,6 +42,21 @@ export function RoomSettingsModal({
   const handleTimerDurationChange = (val: number) => {
     if (!readOnly && onSettingsChange) {
       onSettingsChange({ ...settings, timerDuration: val });
+    }
+  };
+
+  const handleHeartsChange = (val: number) => {
+    if (!readOnly && onSettingsChange) {
+      onSettingsChange({ ...settings, maxHearts: val });
+    }
+  };
+
+  const handleCustomHeartsSubmit = () => {
+    if (readOnly) return;
+    const val = parseInt(customHeartsInput);
+    if (!isNaN(val) && val >= 1 && val <= 10 && onSettingsChange) {
+      onSettingsChange({ ...settings, maxHearts: val });
+      setCustomHeartsInput("");
     }
   };
 
@@ -186,6 +202,64 @@ export function RoomSettingsModal({
                     </Button>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Hearts / Lives */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Heart className="w-4 h-4 text-red-400" />
+                Lives per Game
+              </label>
+              {(settings.maxHearts ?? 3) > 5 && (
+                <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full border border-red-400/20">
+                  Custom: {settings.maxHearts} ❤️
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map(val => (
+                <button
+                  key={val}
+                  disabled={readOnly}
+                  onClick={() => handleHeartsChange(val)}
+                  className={`py-2.5 rounded-xl text-sm font-bold transition-all border flex flex-col items-center gap-0.5 ${
+                    (settings.maxHearts ?? 3) === val
+                      ? 'bg-red-500/20 border-red-400 text-red-400 shadow-[0_0_10px_rgba(248,113,113,0.25)]'
+                      : 'bg-black/30 border-transparent text-muted-foreground ' + (readOnly ? '' : 'hover:bg-black/50 cursor-pointer')
+                  } ${readOnly ? 'cursor-default opacity-90' : ''}`}
+                >
+                  <span className="text-base leading-none">{'❤️'.repeat(Math.min(val, 3))}</span>
+                  <span className="text-[10px] font-black">{val}</span>
+                </button>
+              ))}
+            </div>
+            {/* Heart row display */}
+            <div className="flex items-center justify-center gap-1 py-1">
+              {Array.from({ length: Math.min(settings.maxHearts ?? 3, 10) }).map((_, i) => (
+                <span key={i} className="text-lg leading-none" style={{ filter: 'drop-shadow(0 0 4px rgba(248,113,113,0.6))' }}>❤️</span>
+              ))}
+            </div>
+            {!readOnly && (
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="number"
+                  placeholder="Custom (max 10)"
+                  value={customHeartsInput}
+                  min={1}
+                  max={10}
+                  onChange={(e) => setCustomHeartsInput(e.target.value)}
+                  className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-red-400/50 text-white placeholder:text-muted-foreground/50"
+                  onKeyDown={(e) => e.key === "Enter" && handleCustomHeartsSubmit()}
+                />
+                <Button
+                  onClick={handleCustomHeartsSubmit}
+                  className="h-10 px-4 bg-red-500 hover:bg-red-500/90 text-white font-bold transition-transform active:scale-95"
+                >
+                  Set
+                </Button>
               </div>
             )}
           </div>

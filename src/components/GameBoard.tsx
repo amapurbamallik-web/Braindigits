@@ -8,6 +8,29 @@ import confetti from "canvas-confetti";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
 
+// Hearts display component
+const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; maxHearts: number; size?: 'sm' | 'lg' }) => {
+  const isCritical = hearts === 1;
+  const iconSize = size === 'lg' ? 'text-xl' : 'text-sm';
+  return (
+    <div className={`flex gap-0.5 items-center ${size === 'lg' ? 'gap-1' : ''}`}>
+      {Array.from({ length: maxHearts }).map((_, i) => (
+        <span
+          key={i}
+          className={`${iconSize} leading-none transition-all duration-300 ${
+            i < hearts
+              ? isCritical ? 'animate-pulse' : ''
+              : 'opacity-20 grayscale'
+          }`}
+          style={i < hearts ? { filter: `drop-shadow(0 0 3px rgba(248,113,113,${isCritical ? '1' : '0.6'}))` } : {}}
+        >
+          {i < hearts ? '❤️' : '🤍'}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 interface GameBoardProps {
   gameState: GameState;
   playerId: string;
@@ -238,6 +261,7 @@ export function GameBoard({
               maxRange: gameState.maxRange,
               timerEnabled: gameState.timerEnabled ?? false,
               timerDuration: gameState.timerDuration ?? 15000,
+              maxHearts: gameState.maxHearts ?? 3,
             }}
             onSettingsChange={onUpdateSettings}
             readOnly={!isHost}
@@ -336,39 +360,51 @@ export function GameBoard({
             Players
           </p>
           <div className="space-y-1.5">
-            {gameState.players.map((player, i) => (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
-                  i === gameState.currentTurnIndex
-                    ? "bg-game-cyan/10 ring-1 ring-game-cyan/20"
-                    : player.isEliminated
-                      ? "bg-black/30 opacity-50 grayscale"
-                      : "bg-muted/40"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {i === gameState.currentTurnIndex && !player.isEliminated && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse-glow" />
-                  )}
-                  <span className={`font-medium ${player.id === playerId ? "text-game-cyan" : ""} ${player.isEliminated ? "line-through" : ""}`}>
-                    {player.name}
-                    {player.id === playerId && " (you)"}
-                  </span>
-                  {player.isEliminated && (
-                    <span className="text-[9px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1">
-                      Left
+            {gameState.players.map((player, i) => {
+              const maxHearts = gameState.maxHearts ?? 3;
+              const playerHearts = player.hearts ?? maxHearts;
+              return (
+                <div
+                  key={player.id}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
+                    i === gameState.currentTurnIndex
+                      ? "bg-game-cyan/10 ring-1 ring-game-cyan/20"
+                      : player.isEliminated
+                        ? "bg-black/30 opacity-50 grayscale"
+                        : "bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {i === gameState.currentTurnIndex && !player.isEliminated && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse-glow shrink-0" />
+                    )}
+                    <span className={`font-medium truncate ${
+                      player.id === playerId ? "text-game-cyan" : ""
+                    } ${player.isEliminated ? "line-through" : ""}`}>
+                      {player.name}
+                      {player.id === playerId && " (you)"}
                     </span>
-                  )}
+                    {player.isEliminated && (
+                      <span className="text-[9px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded ml-1 shrink-0">
+                        Out
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Hearts */}
+                    {!player.isEliminated && (
+                      <HeartsDisplay hearts={playerHearts} maxHearts={maxHearts} size="sm" />
+                    )}
+                    {player.isEliminated && (
+                      <span className="text-sm">💀</span>
+                    )}
+                    <span className="font-mono font-bold text-game-amber text-xs">
+                      {player.score}pts
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <span className="text-xs">{player.attempts} guesses</span>
-                  <span className="font-mono font-bold text-game-amber text-xs">
-                    {player.score}pts
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

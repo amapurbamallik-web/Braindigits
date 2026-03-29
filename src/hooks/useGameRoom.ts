@@ -95,6 +95,7 @@ export function useGameRoom() {
   const createRoom = useCallback(
     (playerName: string, settings: import("@/lib/game-types").GameSettings) => {
       const roomCode = generateRoomCode();
+      const maxHearts = settings.maxHearts ?? 3;
       const host: Player = {
         id: playerId,
         name: playerName,
@@ -104,6 +105,7 @@ export function useGameRoom() {
         score: 0,
         isEliminated: false,
         missedTurns: 0,
+        hearts: maxHearts,
       };
       const state: GameState = {
         roomCode,
@@ -117,6 +119,7 @@ export function useGameRoom() {
         round: 1,
         timerEnabled: settings.timerEnabled,
         timerDuration: settings.timerDuration,
+        maxHearts,
       };
       setGameState(state);
       const channel = subscribeToChannel(roomCode, true);
@@ -143,6 +146,7 @@ export function useGameRoom() {
         score: 0,
         isEliminated: false,
         missedTurns: 0,
+        hearts: undefined, // will be set by host when game starts
       };
       const channel = subscribeToChannel(roomCode.toUpperCase(), false);
       setTimeout(() => {
@@ -158,6 +162,7 @@ export function useGameRoom() {
 
   const startGame = useCallback(() => {
     if (!gameState || !channelRef.current) return;
+    const maxHearts = gameState.maxHearts ?? 3;
     const updated: GameState = {
       ...gameState,
       status: "playing",
@@ -171,6 +176,7 @@ export function useGameRoom() {
         guesses: [],
         isEliminated: false,
         missedTurns: 0,
+        hearts: maxHearts,
       })),
       winnerId: null,
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
@@ -246,11 +252,13 @@ export function useGameRoom() {
     const currentPlayer = gameState.players[gameState.currentTurnIndex];
     if (currentPlayer.id !== playerId) return;
 
-    const missedTurns = (currentPlayer.missedTurns || 0) + 1;
-    const isEliminated = missedTurns >= 3;
+    const maxHearts = gameState.maxHearts ?? 3;
+    const currentHearts = currentPlayer.hearts ?? maxHearts;
+    const newHearts = Math.max(0, currentHearts - 1);
+    const isEliminated = newHearts <= 0;
 
-    const updatedPlayers = gameState.players.map(p => 
-      p.id === playerId ? { ...p, missedTurns, isEliminated } : p
+    const updatedPlayers = gameState.players.map(p =>
+      p.id === playerId ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 } : p
     );
 
     const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
@@ -285,6 +293,7 @@ export function useGameRoom() {
 
   const restartGame = useCallback(() => {
     if (!gameState || !channelRef.current) return;
+    const maxHearts = gameState.maxHearts ?? 3;
     const updated: GameState = {
       ...gameState,
       status: "playing",
@@ -298,6 +307,7 @@ export function useGameRoom() {
         guesses: [],
         isEliminated: false,
         missedTurns: 0,
+        hearts: maxHearts,
       })),
       winnerId: null,
       round: gameState.round + 1,
@@ -430,6 +440,7 @@ export function useGameRoom() {
         maxRange: newSettings.maxRange,
         timerEnabled: newSettings.timerEnabled,
         timerDuration: newSettings.timerDuration,
+        maxHearts: newSettings.maxHearts ?? 3,
       };
       setGameState(updated);
       channelRef.current.send({

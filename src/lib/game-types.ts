@@ -7,6 +7,7 @@ export interface Player {
   score: number;
   isEliminated?: boolean;
   missedTurns?: number;
+  hearts?: number;  // current lives remaining
 }
 
 export interface GuessRecord {
@@ -28,18 +29,21 @@ export interface GameState {
   turnDeadline?: number;
   timerEnabled?: boolean;
   timerDuration?: number;
+  maxHearts?: number;   // configured starting lives (default 3)
 }
 
 export interface GameSettings {
   maxRange: number;
   timerEnabled: boolean;
   timerDuration: number;
+  maxHearts: number;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
   maxRange: 100,
   timerEnabled: true,
   timerDuration: 15000,
+  maxHearts: 3,
 };
 
 export type BroadcastPayload =
