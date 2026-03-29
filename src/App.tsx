@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound.tsx";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { AudioProvider } from "./contexts/AudioContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -20,13 +19,11 @@ const App = () => (
           <BrowserRouter>
             <Toaster />
             <Sonner />
-            <ErrorBoundary name="React Application Core">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/:username" element={<Index />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/:username" element={<Index />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
             <MusicPlayer />
           </BrowserRouter>
         </TooltipProvider>

@@ -38,7 +38,11 @@ export function useGameRoom() {
 
   const cleanup = useCallback(() => {
     if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (err) {
+        console.warn("Channel already removed or error during cleanup:", err);
+      }
       channelRef.current = null;
     }
   }, []);
@@ -337,7 +341,6 @@ export function useGameRoom() {
 
   const leaveRoom = useCallback(() => {
     cleanup();
-    setGameState(null);
     setError(null);
   }, [cleanup]);
 

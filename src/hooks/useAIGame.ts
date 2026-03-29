@@ -256,7 +256,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
   }, []);
 
   const leaveRoom = useCallback(() => {
-    setGameState(null);
+    // nothing needed
   }, []);
 
   const updateRoomSettings = useCallback((newSettings: import("@/lib/game-types").GameSettings) => {
