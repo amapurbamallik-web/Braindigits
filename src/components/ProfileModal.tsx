@@ -33,6 +33,7 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
   const { playSfx } = useAudio();
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isConfirmingLogout, setIsConfirmingLogout] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
@@ -277,21 +278,43 @@ export function ProfileModal({ open, onClose, profile, onLogout }: ProfileModalP
               </div>
 
               <div className="flex flex-col gap-2">
-                {onLogout && (
-                  <button 
-                    onClick={onLogout}
-                    className="w-full h-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-500 font-bold text-xs tracking-wide rounded-2xl flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    LOG OUT
-                  </button>
+                {isConfirmingLogout ? (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
+                    <p className="text-sm font-bold text-center text-red-500 tracking-wide">Are you sure you want to log out?</p>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => { playSfx('click'); onLogout?.(); setIsConfirmingLogout(false); }}
+                        className="flex-1 h-10 bg-red-500 hover:bg-red-600 text-white font-bold text-xs tracking-wide rounded-xl active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                      >
+                        YES
+                      </button>
+                      <button 
+                        onClick={() => { playSfx('click'); setIsConfirmingLogout(false); }}
+                        className="flex-1 h-10 bg-white/10 hover:bg-white/20 text-white font-bold text-xs tracking-wide rounded-xl active:scale-[0.98] transition-all border border-white/10"
+                      >
+                        NO
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {onLogout && (
+                      <button 
+                        onClick={() => { playSfx('click'); setIsConfirmingLogout(true); }}
+                        className="w-full h-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-500 font-bold text-xs tracking-wide rounded-2xl flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        LOG OUT
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => { playSfx('click'); onClose(); }}
+                      className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/5 text-white/90 hover:text-white font-bold text-xs tracking-wide rounded-2xl active:scale-[0.98] transition-all"
+                    >
+                      CLOSE DASHBOARD
+                    </button>
+                  </>
                 )}
-                <button 
-                  onClick={onClose}
-                  className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/5 text-white/90 hover:text-white font-bold text-xs tracking-wide rounded-2xl active:scale-[0.98] transition-all"
-                >
-                  CLOSE DASHBOARD
-                </button>
               </div>
             </div>
           )}
