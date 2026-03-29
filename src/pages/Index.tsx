@@ -296,7 +296,7 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
-        <div className="max-w-md w-full p-6 md:p-8 rounded-3xl bg-[#0a0a0f] backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.1)] text-center animate-in fade-in zoom-in duration-200 relative z-10 max-h-[85vh] flex flex-col">
+        <div className="max-w-md w-full p-6 md:p-8 rounded-3xl bg-[#0a0a0f]/95 backdrop-blur-md border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.1)] text-center animate-in fade-in slide-in-from-bottom-4 duration-200 relative z-10 max-h-[85vh] flex flex-col">
           <h2 className="text-3xl font-black mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-game-purple to-pink-500 uppercase drop-shadow-md">Select Level</h2>
           <p className="text-muted-foreground text-sm mb-6 font-medium">Resume your infinite climb.</p>
           
@@ -338,11 +338,9 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
 
   if (!isStarted && !showLobby) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-[#050508] relative overflow-hidden [perspective:1200px]">
-        {/* Vanguard Backdrop Glows */}
-        <div className="absolute top-[-30%] left-[-20%] w-[1000px] h-[1000px] bg-game-purple/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDuration: '10s' }} />
-        <div className="absolute bottom-[-30%] right-[-20%] w-[1000px] h-[1000px] bg-game-cyan/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDuration: '12s' }} />
-
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-[#050508] relative overflow-hidden [perspective:1200px]"
+        style={{ backgroundImage: 'radial-gradient(circle at 0% 0%, rgba(171,71,188,0.03) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(0,229,255,0.03) 0%, transparent 50%)' }}
+      >
         {/* Global Navigation - Minimalist High Tech */}
         <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-50 pointer-events-none">
           <button 
