@@ -33,31 +33,24 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const [searchResults, setSearchResults] = useState<{id: string, username: string}[]>([]);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const withTimeout = <T,>(promise: Promise<T>, ms: number = 12000): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Request timed out.")), ms))
-    ]);
-  };
-
   const { data: friendships = [], isLoading: loading, error: fetchErrorRaw, refetch } = useQuery({
     queryKey: ["friendships", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data: rels, error: relsError } = (await withTimeout((supabase as any)
+      const { data: rels, error: relsError } = await (supabase as any)
         .from("friendships")
         .select("*")
-        .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`), 12000)) as any;
+        .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
         
       if (relsError) throw new Error("Failed to load friends");
       if (!rels || rels.length === 0) return [];
 
       const friendIds = rels.map((r: any) => r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1);
       
-      const { data: profiles, error: profError } = (await withTimeout((supabase as any)
+      const { data: profiles, error: profError } = await (supabase as any)
         .from("profiles")
         .select("id, username, total_wins, total_games, ai_wins")
-        .in("id", friendIds), 12000)) as any;
+        .in("id", friendIds);
 
       if (profError) throw new Error("Failed to load generic profiles");
 
@@ -72,7 +65,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
     },
     enabled: open && !!user,
     staleTime: 30000,
-    retry: false, // Stop React Query from silently retrying timeouts
+    retry: 2, // Give Supabase a couple of chances if it hits a connection hiccup during load
   });
 
   const fetchError = fetchErrorRaw ? fetchErrorRaw.message : null;

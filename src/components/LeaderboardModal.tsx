@@ -66,31 +66,26 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
     }
   };
 
-  const withTimeout = <T,>(promise: Promise<T>, ms: number = 10000): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Request timed out.")), ms))
-    ]);
-  };
+
 
   const { data: leaders = [], isLoading: loading, error, refetch } = useQuery({
     queryKey: ["leaderboard", tab],
     queryFn: async () => {
       const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
       
-      const { data, error: fetchError } = (await withTimeout((supabase as any)
+      const { data, error: fetchError } = await (supabase as any)
         .from("profiles")
         .select("id, username, total_wins, ai_wins, total_games")
         .gt(orderColumn, 0)
         .order(orderColumn, { ascending: false })
-        .limit(50), 10000)) as any;
+        .limit(50);
 
       if (fetchError) throw new Error("Could not load leaderboard. Please try again.");
       return (data || []) as UserProfile[];
     },
     enabled: open,
     staleTime: 60000, // Cache for 1 minute
-    retry: false,
+    retry: 2, // Give Supabase a couple of chances if it hits a connection hiccup during load
   });
 
   if (!open) return null;
