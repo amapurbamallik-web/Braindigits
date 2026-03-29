@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { useEffect, useRef } from "react";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { LogoutConfirmModal } from "./LogoutConfirmModal";
 
 interface ModeSelectionProps {
   onSelectMode: (mode: "friends" | "ai") => void;
@@ -29,7 +30,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
   const [showProfile, setShowProfile] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
-  const [isConfirmingQuickLogout, setIsConfirmingQuickLogout] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   // Track if user clicked 'Play as Guest'
   const [isGuest, setIsGuest] = useState(false);
   const prevCountRef = useRef<number>(0);
@@ -174,34 +175,13 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
               </button>
               <div className="w-px h-5 md:h-6 bg-white/10 mx-0.5 shrink-0 group-hover:bg-game-cyan/30 transition-colors"></div>
               
-              {isConfirmingQuickLogout ? (
-                <div className="flex items-center animate-in fade-in slide-in-from-right-2 mr-1">
-                  <button 
-                    onClick={async () => {
-                      playSfx('click');
-                      await logout();
-                      setIsConfirmingQuickLogout(false);
-                    }} 
-                    className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white font-black text-[10px] sm:text-xs rounded-l-full active:scale-95 transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)] border-r border-red-600"
-                  >
-                    YES
-                  </button>
-                  <button 
-                    onClick={() => { playSfx('click'); setIsConfirmingQuickLogout(false); }} 
-                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white font-bold text-[10px] sm:text-xs rounded-r-full active:scale-95 transition-all outline outline-1 outline-white/10"
-                  >
-                    NO
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => { playSfx('click'); setIsConfirmingQuickLogout(true); }} 
-                  className="p-1.5 md:p-2 rounded-full text-muted-foreground/70 hover:bg-red-500/15 hover:text-red-400 active:scale-90 transition-all focus:outline-none" 
-                  title="Secure Logout"
-                >
-                  <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                </button>
-              )}
+              <button 
+                onClick={() => { playSfx('click'); setShowLogoutConfirm(true); }} 
+                className="p-1.5 md:p-2 rounded-full text-muted-foreground/70 hover:bg-red-500/15 hover:text-red-400 active:scale-90 transition-all focus:outline-none" 
+                title="Secure Logout"
+              >
+                <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
             </div>
           ) : (
             <Button
@@ -336,9 +316,9 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         open={showProfile}
         onClose={() => setShowProfile(false)}
         profile={profile}
-        onLogout={async () => {
-          await logout();
+        onLogout={() => {
           setShowProfile(false);
+          setShowLogoutConfirm(true);
         }}
       />
 
@@ -350,6 +330,15 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
       <FriendsListModal
         open={showFriends}
         onClose={() => setShowFriends(false)}
+      />
+
+      <LogoutConfirmModal 
+        open={showLogoutConfirm}
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={async () => {
+          setShowLogoutConfirm(false);
+          await logout();
+        }}
       />
 
     </div>
