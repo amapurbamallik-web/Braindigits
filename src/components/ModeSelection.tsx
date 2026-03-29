@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Bot, HelpCircle, X, Settings2, Instagram, Linkedin, Facebook, Twitter, Github, Mail, UserCircle, Trophy, LogOut } from "lucide-react";
+import { Users, Bot, HelpCircle, X, Settings2, Instagram, Linkedin, Facebook, Twitter, Github, Mail, UserCircle, Trophy, LogOut, UserPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { useEffect, useRef } from "react";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
 import { LogoutConfirmModal } from "./LogoutConfirmModal";
+import { InviteModal } from "./InviteModal";
 
 interface ModeSelectionProps {
   onSelectMode: (mode: "friends" | "ai") => void;
@@ -31,6 +32,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   // Track if user clicked 'Play as Guest'
   const [isGuest, setIsGuest] = useState(false);
   const prevCountRef = useRef<number>(0);
@@ -231,6 +233,16 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             Play with AI
           </Button>
 
+          <Button
+            onClick={() => { playSfx('click'); setShowInvite(true); }}
+            variant="outline"
+            size="lg"
+            className="w-full h-12 text-sm font-bold border-dashed border-game-amber/30 text-game-amber/80 hover:bg-game-amber/10 hover:border-game-amber/60 hover:text-game-amber active:scale-[0.97] transition-all"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite Friends to BrainDigits
+          </Button>
+
           <div className="pt-1 flex gap-2 md:gap-3">
             <Button
               onClick={() => setShowInstructions(true)}
@@ -339,6 +351,11 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           setShowLogoutConfirm(false);
           await logout();
         }}
+      />
+
+      <InviteModal
+        open={showInvite}
+        onClose={() => setShowInvite(false)}
       />
 
     </div>

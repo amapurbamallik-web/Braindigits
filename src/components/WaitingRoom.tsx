@@ -1,9 +1,10 @@
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Users, Settings2 } from "lucide-react";
+import { Copy, Check, Users, Settings2, Share2 } from "lucide-react";
 import { useState } from "react";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { FriendsListModal } from "./FriendsListModal";
+import { InviteModal } from "./InviteModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
 
 interface WaitingRoomProps {
@@ -18,6 +19,7 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(gameState.roomCode);
@@ -66,14 +68,24 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           </button>
         </div>
 
-        <Button
-          onClick={() => setShowFriends(true)}
-          variant="outline"
-          className="w-full mb-6 h-12 border-game-purple/30 text-game-purple hover:bg-game-purple/10 font-bold active:scale-[0.97]"
-        >
-          <Users className="w-5 h-5 mr-2" />
-          Invite Friends
-        </Button>
+        <div className="flex gap-3 mb-6">
+          <Button
+            onClick={() => setShowFriends(true)}
+            variant="outline"
+            className="flex-1 h-12 border-game-purple/30 text-game-purple hover:bg-game-purple/10 font-bold active:scale-[0.97]"
+          >
+            <Users className="w-5 h-5 mr-2" />
+            Friends
+          </Button>
+          <Button
+            onClick={() => setShowInvite(true)}
+            variant="outline"
+            className="flex-1 h-12 border-game-cyan/30 text-game-cyan hover:bg-game-cyan/10 font-bold active:scale-[0.97]"
+          >
+            <Share2 className="w-5 h-5 mr-2" />
+            Share
+          </Button>
+        </div>
 
         <div className="bg-card rounded-xl p-5 shadow-sm mb-6 border border-border/50">
           <p className="text-sm font-medium text-muted-foreground mb-3">
@@ -130,6 +142,12 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
         <FriendsListModal
           open={showFriends}
           onClose={() => setShowFriends(false)}
+          roomCode={gameState.roomCode}
+        />
+
+        <InviteModal
+          open={showInvite}
+          onClose={() => setShowInvite(false)}
           roomCode={gameState.roomCode}
         />
       </div>
