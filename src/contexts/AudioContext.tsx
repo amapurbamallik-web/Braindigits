@@ -59,11 +59,23 @@ const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, de
 };
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [isMusicEnabled, setIsMusicEnabled] = useState(false);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
+    try { return localStorage.getItem('bd_sound') !== 'false'; } catch { return true; }
+  });
+  const [isMusicEnabled, setIsMusicEnabled] = useState(() => {
+    try { return localStorage.getItem('bd_music') === 'true'; } catch { return false; }
+  });
 
-  const toggleSound = () => setIsSoundEnabled(!isSoundEnabled);
-  const toggleMusic = () => setIsMusicEnabled(!isMusicEnabled);
+  const toggleSound = () => setIsSoundEnabled(prev => {
+    const next = !prev;
+    try { localStorage.setItem('bd_sound', String(next)); } catch {}
+    return next;
+  });
+  const toggleMusic = () => setIsMusicEnabled(prev => {
+    const next = !prev;
+    try { localStorage.setItem('bd_music', String(next)); } catch {}
+    return next;
+  });
 
   const playSfx = (type: SoundType) => {
     if (!isSoundEnabled) return;
