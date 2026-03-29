@@ -121,3 +121,33 @@
     background-color: hsl(var(--game-dark));
   }
 }
+
+@keyframes scanner-vertical {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes shimmer-ultra {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(400%) skewX(-20deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 5px currentColor) opacity(0.8); }
+  50% { filter: drop-shadow(0 0 20px currentColor) opacity(1); }
+}
+
+.animate-scanner-vertical {
+  animation: scanner-vertical 3s linear infinite;
+}
+
+.animate-shimmer-ultra {
+  animation: shimmer-ultra 2s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+

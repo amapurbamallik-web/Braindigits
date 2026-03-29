@@ -57,8 +57,6 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
     leaveGameEarly();
   };
 
-  // Transition out handled purely by parent component's mode change
-
   if (!gameState) {
     return (
       <GameLobby 
@@ -121,12 +119,9 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
     setIsStarted(false);
   };
 
-  // Transition done via Index state
-
     if (!isStarted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-game-dark relative overflow-hidden">
-        {/* Animated background matching ModeSelection */}
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-amber/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s' }} />
 
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
@@ -189,6 +184,7 @@ function getGuestArcadeData() {
 
 function ArcadeWrapper({ onExit }: { onExit: () => void }) {
   const { profile, updateProfileField } = useAuth();
+  const { playSfx } = useAudio();
   const [guestData, setGuestData] = useState(() => getGuestArcadeData());
   const [playerName] = useState(() => profile?.username || `Guest-${Math.floor(1000 + Math.random() * 9000)}`);
   const [isStarted, setIsStarted] = useState(false);
@@ -289,18 +285,18 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
 
   if (showLevelSelect && !isStarted) {
     const maxUnlocked = (profile ? (profile.arcade_max_level || 0) : guestData.arcade_max_level) + 1;
-    const levels = Array.from({ length: maxUnlocked }, (_, i) => i + 1).reverse(); // High levels on top!
+    const levels = Array.from({ length: maxUnlocked }, (_, i) => i + 1).reverse();
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-game-dark relative overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-game-purple/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-[#050508] relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-game-purple/5 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
         <button 
-          onClick={() => setShowLevelSelect(false)} 
+          onClick={() => { playSfx('click'); setShowLevelSelect(false); }} 
           className="absolute top-20 left-6 md:top-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-purple/20 text-foreground hover:bg-game-purple/10 hover:text-game-purple shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
-        <div className="max-w-md w-full p-6 md:p-8 rounded-3xl bg-card/60 backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.15)] text-center animate-in fade-in zoom-in duration-500 relative z-10 max-h-[85vh] flex flex-col">
+        <div className="max-w-md w-full p-6 md:p-8 rounded-3xl bg-[#0a0a0f] backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.1)] text-center animate-in fade-in zoom-in duration-200 relative z-10 max-h-[85vh] flex flex-col">
           <h2 className="text-3xl font-black mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-game-purple to-pink-500 uppercase drop-shadow-md">Select Level</h2>
           <p className="text-muted-foreground text-sm mb-6 font-medium">Resume your infinite climb.</p>
           
@@ -311,7 +307,8 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
               <button
                 key={lvl}
                 onClick={() => {
-                  createRoom(playerName, true, lvl); // Start at explicitly selected level
+                  playSfx('click');
+                  createRoom(playerName, true, lvl);
                   setIsStarted(true);
                 }}
                 className={`w-full p-4 rounded-xl flex justify-between items-center transition-all active:scale-[0.98] border ${
@@ -341,81 +338,137 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
 
   if (!isStarted && !showLobby) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-game-dark relative overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-game-purple/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '5s' }} />
-        
-        <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-50 pointer-events-none">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-[#050508] relative overflow-hidden [perspective:1200px]">
+        {/* Vanguard Backdrop Glows */}
+        <div className="absolute top-[-30%] left-[-20%] w-[1000px] h-[1000px] bg-game-purple/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDuration: '10s' }} />
+        <div className="absolute bottom-[-30%] right-[-20%] w-[1000px] h-[1000px] bg-game-cyan/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDuration: '12s' }} />
+
+        {/* Global Navigation - Minimalist High Tech */}
+        <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-50 pointer-events-none">
           <button 
-            onClick={onExit} 
-            className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-card/60 backdrop-blur-xl border border-game-purple/20 text-foreground hover:bg-game-purple/15 hover:text-fuchsia-400 hover:border-game-purple/40 shadow-2xl transition-all active:scale-95 pointer-events-auto group"
+            onClick={() => { playSfx('click'); onExit(); }} 
+            className="flex items-center gap-3 px-8 py-3 rounded-sm bg-red-500/[0.03] backdrop-blur-3xl border border-red-500/20 text-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300 active:scale-90 pointer-events-auto group relative overflow-hidden"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> <span className="font-bold text-sm md:text-base">Exit Mode</span>
+            <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-red-400 group-hover:w-full transition-all duration-500" />
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="font-black text-[10px] uppercase tracking-[0.4em]">Abort Arena</span>
           </button>
-          <GlobalLogo className="hidden md:flex pointer-events-auto" />
+          <GlobalLogo className="hidden lg:flex pointer-events-auto opacity-20 hover:opacity-100 transition-all duration-700" />
         </div>
 
-        <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-10 animate-fade-in-up mt-20 md:mt-0">
-           {/* Solo Discovery Card */}
+        {/* Digital Vanguard Selection Grid */}
+        <div className="w-full max-w-6xl flex flex-col gap-4 relative z-10 px-4 md:px-12 mt-16 lg:mt-0">
+           
+           {/* ── Vanguard Header: Infinite Solo ── */}
            <div 
-             onClick={() => setShowLevelSelect(true)}
-             className="group relative h-[320px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden cursor-pointer border border-white/5 hover:border-game-purple/40 transition-all duration-500 shadow-2xl hover:shadow-game-purple/20"
+             onClick={() => { playSfx('click'); setShowLevelSelect(true); }}
+             className="group relative h-36 md:h-48 rounded-sm md:rounded-md overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-purple/40 transition-all duration-300 active:scale-[0.98] shadow-[0_45px_100px_rgba(0,0,0,0.8)] [transform-style:preserve-3d] [transform:rotateY(1.2deg)] hover:[transform:rotateY(-4deg)] bg-[#0a0a0f]"
            >
-              <div className="absolute inset-0 bg-gradient-to-t from-game-dark via-game-dark/40 to-transparent z-10" />
-              <div className="absolute inset-0 bg-game-purple/10 group-hover:bg-game-purple/20 transition-colors duration-500" />
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-purple shadow-[0_0_15px_rgba(171,71,188,0.8)] z-30 animate-pulse duration-[3000ms]" />
               
-              {/* Card Content */}
-              <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end z-20">
-                 <div className="mb-3 md:mb-4 w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-game-purple/20 border border-game-purple/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
-                    <Star className="w-6 h-6 md:w-8 md:h-8 text-game-purple fill-game-purple" />
+              <div 
+                className="absolute inset-0 opacity-[0.03] select-none pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+              />
+
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none overflow-hidden">
+                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer-ultra" />
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-purple/15 via-[#0a0a0f]/80 to-[#0a0a0f] z-10" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,rgba(171,71,188,0.2),transparent_70%)] group-hover:bg-[radial-gradient(circle_at_10%_50%,rgba(171,71,188,0.3),transparent_70%)] transition-all duration-1000" />
+              
+              <div className="absolute inset-0 px-6 md:px-10 flex items-center justify-between z-20">
+                 <div className="flex items-center gap-6 md:gap-8">
+                    <div className="relative group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
+                       <div className="absolute inset-0 bg-game-purple/40 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
+                       <div className="w-12 h-12 md:w-20 md:h-20 rounded-sm bg-[#050508] border border-game-purple/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(171,71,188,0.2)]">
+                          <Star className="w-6 h-6 md:w-10 md:h-10 text-game-purple fill-game-purple drop-shadow-[0_0_20px_rgba(171,71,188,1)]" />
+                          <div className="absolute top-0 left-0 w-full h-[2px] bg-game-purple/50 animate-scanner-vertical pointer-events-none" />
+                       </div>
+                    </div>
+                    <div>
+                       <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1 [transform:skewX(-10deg)] group-hover:translate-x-4 transition-transform duration-700 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">Infinite Solo</h3>
+                       <div className="flex items-center gap-2 group-hover:translate-x-4 transition-transform duration-700 delay-75">
+                          <span className="w-1.5 h-1.5 rounded-full bg-game-purple animate-pulse" />
+                          <p className="text-fuchsia-200/40 text-[9px] md:text-xs font-black uppercase tracking-[0.5em]">Sector: Survival Elite</p>
+                       </div>
+                    </div>
                  </div>
-                 <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight mb-1 md:mb-2 group-hover:translate-x-2 transition-transform duration-500">Infinite Solo</h3>
-                 <p className="text-fuchsia-200/60 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 group-hover:translate-x-2 transition-transform duration-500 delay-[50ms]">
-                   Master the climb. Reach new levels and earn stars in the ultimate survival mode.
-                 </p>
-                 <div className="w-full h-12 md:h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-purple group-hover:text-game-dark transition-all duration-500 uppercase tracking-widest text-xs md:text-sm">
-                   Begin Journey
+                 
+                 <div className="hidden lg:flex flex-col items-end gap-3 group-hover:translate-x-[-20px] transition-transform duration-700">
+                    <div className="text-[10px] font-black text-game-purple uppercase tracking-[0.6em] opacity-30 group-hover:opacity-60 transition-opacity">Neural Sync Ready</div>
+                    <div className="h-12 md:h-16 px-12 rounded-sm bg-[#0a0a0f] border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-purple group-hover:text-game-dark group-hover:border-game-purple group-hover:shadow-[0_0_30px_rgba(171,71,188,0.5)] transition-all duration-500 uppercase tracking-[0.3em] text-[10px]">
+                       Initiate Breach
+                    </div>
                  </div>
               </div>
 
-              {/* Decorative elements */}
-              <div className="absolute -top-10 md:-top-20 -right-10 md:-right-20 w-48 h-48 md:w-64 md:h-64 bg-game-purple/20 rounded-full blur-[60px] md:blur-[80px] group-hover:bg-game-purple/30 transition-all" />
-              <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 opacity-5 md:opacity-10 group-hover:opacity-20 transition-opacity">
-                 <span className="text-7xl md:text-9xl font-black italic text-game-purple tracking-tighter">SURVIVE</span>
+              <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-10 transition-all duration-1000 select-none pointer-events-none group-hover:translate-y-[-10%]">
+                 <span className="text-9xl md:text-[18rem] font-black italic text-game-purple tracking-tighter">VANGUARD</span>
               </div>
            </div>
 
-           {/* Lounge Discovery Card */}
+           {/* ── Vanguard Header: Arcade Lounge ── */}
            <div 
-             onClick={() => setShowLobby(true)}
-             className="group relative h-[320px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden cursor-pointer border border-white/5 hover:border-game-cyan/40 transition-all duration-500 shadow-2xl hover:shadow-game-cyan/20"
+             onClick={() => { playSfx('click'); setShowLobby(true); }}
+             className="group relative h-36 md:h-48 rounded-sm md:rounded-md overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-cyan/40 transition-all duration-300 active:scale-[0.98] shadow-[0_45px_100px_rgba(0,0,0,0.8)] [transform-style:preserve-3d] [transform:rotateY(1.2deg)] hover:[transform:rotateY(-4deg)] bg-[#0a0a0f]"
            >
-              <div className="absolute inset-0 bg-gradient-to-t from-game-dark via-game-dark/40 to-transparent z-10" />
-              <div className="absolute inset-0 bg-game-cyan/10 group-hover:bg-game-cyan/20 transition-colors duration-500" />
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-cyan shadow-[0_0_15px_rgba(0,229,255,0.8)] z-30 animate-pulse duration-[3500ms]" />
               
-              {/* Card Content */}
-              <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end z-20">
-                 <div className="mb-3 md:mb-4 w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-game-cyan/20 border border-game-cyan/30 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500">
-                    <Users className="w-6 h-6 md:w-8 md:h-8 text-game-cyan" />
+              <div 
+                className="absolute inset-0 opacity-[0.03] select-none pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+              />
+
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none overflow-hidden">
+                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer-ultra" />
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-cyan/15 via-[#0a0a0f]/80 to-[#0a0a0f] z-10" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,rgba(0,229,255,0.15),transparent_70%)] group-hover:bg-[radial-gradient(circle_at_10%_50%,rgba(0,229,255,0.25),transparent_70%)] transition-all duration-1000" />
+              
+              <div className="absolute inset-0 px-6 md:px-10 flex items-center justify-between z-20">
+                 <div className="flex items-center gap-6 md:gap-8">
+                    <div className="relative group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700">
+                       <div className="absolute inset-0 bg-game-cyan/40 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
+                       <div className="w-12 h-12 md:w-20 md:h-20 rounded-sm bg-[#050508] border border-game-cyan/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(0,229,255,0.2)]">
+                          <Users className="w-6 h-6 md:w-10 md:h-10 text-game-cyan drop-shadow-[0_0_20px_rgba(0,229,255,1)]" />
+                          <div className="absolute top-0 left-0 w-full h-[2px] bg-game-cyan/40 animate-scanner-vertical pointer-events-none" />
+                       </div>
+                    </div>
+                    <div>
+                       <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1 [transform:skewX(-10deg)] group-hover:translate-x-4 transition-transform duration-700 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">Arcade Lounge</h3>
+                       <div className="flex items-center gap-2 group-hover:translate-x-4 transition-transform duration-700 delay-75">
+                          <span className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse" />
+                          <p className="text-cyan-200/40 text-[9px] md:text-xs font-black uppercase tracking-[0.5em]">Sector: Multiplayer Clash</p>
+                       </div>
+                    </div>
                  </div>
-                 <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight mb-1 md:mb-2 group-hover:translate-x-2 transition-transform duration-500">Arcade Lounge</h3>
-                 <p className="text-cyan-200/60 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 group-hover:translate-x-2 transition-transform duration-500 delay-[50ms]">
-                   Compete with up to 8 friends in a high-stakes, fast-paced guessing arena.
-                 </p>
-                 <div className="w-full h-12 md:h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-cyan group-hover:text-game-dark transition-all duration-500 uppercase tracking-widest text-xs md:text-sm">
-                   Enter Lounge
+                 
+                 <div className="hidden lg:flex flex-col items-end gap-3 group-hover:translate-x-[-20px] transition-transform duration-700">
+                    <div className="text-[10px] font-black text-game-cyan uppercase tracking-[0.6em] opacity-30 group-hover:opacity-60 transition-opacity">Protocol: Comms Link Synced</div>
+                    <div className="h-12 md:h-16 px-12 rounded-sm bg-[#0a0a0f] border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-cyan group-hover:text-game-dark group-hover:border-game-cyan group-hover:shadow-[0_0_30px_rgba(0,229,255,0.5)] transition-all duration-500 uppercase tracking-[0.3em] text-[10px]">
+                       Initiate Clash
+                    </div>
                  </div>
               </div>
 
-              {/* Decorative elements */}
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-game-cyan/20 rounded-full blur-[80px] group-hover:bg-game-cyan/30 transition-all" />
-              <div className="absolute bottom-10 right-10 opacity-10 group-hover:opacity-30 transition-opacity">
-                 <span className="text-9xl font-black italic text-game-cyan tracking-tighter">CLASH</span>
+              <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-10 transition-all duration-1000 select-none pointer-events-none group-hover:translate-y-[-10%]">
+                 <span className="text-9xl md:text-[18rem] font-black italic text-game-cyan tracking-tighter">PROTOCOL</span>
               </div>
            </div>
         </div>
 
-        <div className="mt-12 text-center text-muted-foreground/40 font-black uppercase tracking-[0.4em] text-xs">
-           BrainDigits Premium Arcade Arena
+        <div className="mt-4 lg:mt-6 flex items-center gap-8 opacity-20 hover:opacity-100 transition-opacity duration-700 select-none">
+           <div className="flex flex-col items-start">
+              <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.5em] mb-1">Arena Status</span>
+              <span className="text-[10px] font-black text-game-success uppercase tracking-widest animate-pulse">Operational</span>
+           </div>
+           <div className="w-px h-8 bg-white/10" />
+           <div className="flex flex-col items-start">
+              <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.5em] mb-1">Neural Load</span>
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Optimized 0.04ms</span>
+           </div>
         </div>
       </div>
     );
@@ -436,7 +489,6 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
   }
 
   if (gameState?.status === "waiting") {
-    // Waiting room handles starting the game for multiplayer
     return <WaitingRoom gameState={gameState} isHost={isHost} onStart={startGame} onLeave={handleLeave} onUpdateSettings={() => {}} onKick={kickPlayer} mode="arcade" />;
   }
 
@@ -473,9 +525,8 @@ export default function Index() {
     modeRef.current = mode;
   }, [mode]);
 
-  // Synchronize URL with logged-in username
   useEffect(() => {
-    if (isLoading) return; // Wait for Supabase to finish checking session against localStorage
+    if (isLoading) return;
     
     if (profile?.username) {
       if (location.pathname === '/' || location.pathname === '') {
@@ -496,7 +547,6 @@ export default function Index() {
     channel.on('broadcast', { event: 'match_invite' }, (payload) => {
       const { roomCode, senderName, senderId } = payload.payload;
       
-      // Auto-reject if user is already playing a game
       if (modeRef.current !== "select") {
         if (senderId && profile) {
           const rejectChannel = supabase.channel(`player-invites:${senderId}`);
@@ -511,11 +561,10 @@ export default function Index() {
             }
           });
         }
-        return; // Ignore the invite entirely
+        return;
       }
 
       playSfx('notification');
-      // Trigger cinematic modal instead of small toast
       setPendingInvite({ roomCode, senderName });
     });
     
@@ -553,7 +602,6 @@ export default function Index() {
     <>
       {renderContent()}
 
-      {/* Cinematic Live Invite Modal */}
       {pendingInvite && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-sm bg-game-dark border border-game-cyan/30 rounded-[2rem] shadow-[0_0_80px_rgba(0,229,255,0.2)] p-8 text-center animate-in zoom-in-95 relative overflow-hidden">

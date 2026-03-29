@@ -208,13 +208,13 @@ export function ArcadeBoard({
 
           <div className="flex gap-3">
             <button
-              onClick={() => setShowLeaveConfirm(true)}
-              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-[0.97]"
+              onClick={() => { playSfx('click'); setShowLeaveConfirm(true); }}
+              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 font-bold transition-all active:scale-[0.97]"
             >
               <LogOut className="h-4 w-4" />
               Main Menu
             </button>
-            <Button onClick={onRestart} className="flex-1 h-14 font-black active:scale-[0.97] transition-all bg-game-purple hover:bg-game-purple/90 text-white shadow-[0_0_20px_rgba(171,71,188,0.3)]">
+            <Button onClick={() => { playSfx('click'); onRestart(); }} className="flex-1 h-14 font-black active:scale-[0.97] transition-all bg-game-purple hover:bg-game-purple/90 text-white shadow-[0_0_20px_rgba(171,71,188,0.3)]">
               <Trophy className="h-5 w-5 mr-2" />
               Play Again
             </Button>
@@ -279,7 +279,7 @@ export function ArcadeBoard({
           </div>
 
           <Button 
-            onClick={() => onNextLevel?.()} 
+            onClick={() => { playSfx('click'); onNextLevel?.(); }} 
             className="w-full h-16 text-lg font-black active:scale-[0.97] transition-all bg-green-500 hover:bg-green-400 text-game-dark shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-pulse-glow"
           >
             START NEXT LEVEL
@@ -310,8 +310,8 @@ export function ArcadeBoard({
             </span>
             {onLeaveEarly && (
               <button 
-                onClick={() => setShowLeaveConfirmEarly(true)}
-                className="ml-2 p-1.5 rounded-md bg-white/5 border border-white/10 hover:bg-red-500/20 text-muted-foreground hover:text-red-300 transition-all active:scale-90"
+                onClick={() => { playSfx('click'); setShowLeaveConfirmEarly(true); }}
+                className="ml-2 p-1.5 rounded-md bg-white/5 border border-white/10 hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/30 transition-all active:scale-90"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -398,7 +398,7 @@ export function ArcadeBoard({
                 autoFocus
               />
               <Button
-                onClick={handleSubmitGuess}
+                onClick={() => { playSfx('click'); handleSubmitGuess(); }}
                 className={`h-14 px-8 text-lg font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
               >
                 GO

@@ -113,7 +113,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
         {/* ── Dashboard Header ── */}
         <div className="relative pt-6 pb-3 px-6 flex flex-col items-center shrink-0">
           <button
-            onClick={() => isEditingAvatar ? setIsEditingAvatar(false) : onClose()}
+            onClick={() => { playSfx('click'); isEditingAvatar ? setIsEditingAvatar(false) : onClose(); }}
             className="absolute top-5 right-5 z-20 p-2 rounded-full bg-white/[0.03] hover:bg-white/[0.08] text-white/50 hover:text-white transition-all active:scale-90"
           >
             <X className="h-5 w-5" />
@@ -197,7 +197,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
                     {uploading ? "SYNCING..." : "Flash Media Upload"}
                   </Button>
                   
-                  <button onClick={() => setIsEditingAvatar(false)} className="w-full text-[9px] font-black text-white/40 uppercase tracking-[0.2em] hover:text-white py-1">
+                  <button onClick={() => { playSfx('click'); setIsEditingAvatar(false); }} className="w-full text-[9px] font-black text-white/40 uppercase tracking-[0.2em] hover:text-white py-1">
                     RETURN TO DASHBOARD
                   </button>
                 </div>
