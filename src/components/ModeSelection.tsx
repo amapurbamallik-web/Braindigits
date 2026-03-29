@@ -266,8 +266,8 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
 
         {/* Existing Instructions Modal */}
         {showInstructions && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in duration-200">
-            <div className="w-full max-w-md bg-card rounded-2xl p-6 shadow-2xl border border-border/30 animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md fade-in duration-200">
+            <div className="w-full max-w-md bg-[#0f0f18]/95 backdrop-blur-2xl rounded-2xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-xl font-bold text-foreground">How to Play</h2>
                 <button

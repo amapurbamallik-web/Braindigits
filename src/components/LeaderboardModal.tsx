@@ -94,7 +94,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md fade-in duration-200">
-      <div className="w-full max-w-lg bg-card rounded-3xl p-6 shadow-2xl border border-border/20 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+      <div className="w-full max-w-lg bg-[#0f0f18]/95 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Trophy className="w-6 h-6 text-game-amber" /> Hall of Fame

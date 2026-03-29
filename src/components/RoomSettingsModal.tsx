@@ -63,8 +63,8 @@ export function RoomSettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in duration-200">
-      <div className="w-full max-w-sm bg-card rounded-3xl p-6 shadow-2xl border border-border/20 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-[#0f0f18]/95 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Settings2 className="w-5 h-5 text-game-cyan" /> 
