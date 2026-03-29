@@ -99,7 +99,7 @@ export function useGameRoom() {
   const safeSend = useCallback((channel: ReturnType<typeof supabase.channel> | null, payload: any) => {
     if (!channel) return;
     try {
-      safeSend(channel, payload);
+      channel.send(payload);
     } catch (e) {
       console.warn('Failed to send message via Supabase RT', e);
     }
