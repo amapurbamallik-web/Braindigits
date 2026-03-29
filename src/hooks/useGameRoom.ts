@@ -281,6 +281,9 @@ export function useGameRoom() {
     if (heartsEnabled && activePlayers.length <= 1 && gameState.players.length > 1) {
       status = "finished";
       winnerId = activePlayers.length === 1 ? activePlayers[0].id : null;
+      if (winnerId) {
+        updatedPlayers = updatedPlayers.map(p => p.id === winnerId ? { ...p, score: p.score + 1 } : p);
+      }
     } else {
       nextTurnIndex = getNextTurnIndex(gameState.currentTurnIndex, updatedPlayers);
     }

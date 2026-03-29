@@ -10,6 +10,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { usePresence } from "@/hooks/usePresence";
 import { Avatar } from "./Avatar";
 import { ProfileModal } from "./ProfileModal";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 interface FriendsListProps {
   open: boolean;
@@ -25,6 +26,14 @@ type FriendshipData = {
 };
 
 export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) {
+  return (
+    <ErrorBoundary name="Friends List">
+      <FriendsListModalContent open={open} onClose={onClose} roomCode={roomCode} />
+    </ErrorBoundary>
+  );
+}
+
+function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) {
   const { user, profile } = useAuth();
   const { playSfx } = useAudio();
   const queryClient = useQueryClient();

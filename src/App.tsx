@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound.tsx";
 import { MusicPlayer } from "./components/MusicPlayer";
 import { AudioProvider } from "./contexts/AudioContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -19,12 +20,13 @@ const App = () => (
           <BrowserRouter>
             <Toaster />
             <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/:username" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <ErrorBoundary name="React Application Core">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/:username" element={<Index />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
             <MusicPlayer />
           </BrowserRouter>
         </TooltipProvider>

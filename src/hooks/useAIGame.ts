@@ -184,6 +184,9 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
             if (heartsEnabled && activePlayers.length === 1) {
               status = "finished";
               winnerId = activePlayers[0].id;
+              if (winnerId) {
+                updatedPlayers = updatedPlayers.map(p => p.id === winnerId ? { ...p, score: p.score + 1 } : p);
+              }
             }
 
             return {
