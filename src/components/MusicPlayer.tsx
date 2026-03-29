@@ -22,6 +22,32 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className }) => {
     }
   }, [isMusicEnabled]);
 
+  // Browsers block autoplay until the user interacts with the page.
+  // On refresh, if music was enabled, resume the moment they first touch/click anything.
+  useEffect(() => {
+    if (!isMusicEnabled) return;
+
+    const resumeOnInteraction = () => {
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {});
+      }
+      // Once played, remove listeners — no need to keep listening
+      document.removeEventListener('click', resumeOnInteraction);
+      document.removeEventListener('keydown', resumeOnInteraction);
+      document.removeEventListener('touchstart', resumeOnInteraction);
+    };
+
+    document.addEventListener('click', resumeOnInteraction);
+    document.addEventListener('keydown', resumeOnInteraction);
+    document.addEventListener('touchstart', resumeOnInteraction);
+
+    return () => {
+      document.removeEventListener('click', resumeOnInteraction);
+      document.removeEventListener('keydown', resumeOnInteraction);
+      document.removeEventListener('touchstart', resumeOnInteraction);
+    };
+  }, [isMusicEnabled]);
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = 0.08;
