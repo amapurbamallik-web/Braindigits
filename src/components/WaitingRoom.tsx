@@ -1,11 +1,14 @@
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Users, Settings2, Share2 } from "lucide-react";
+import { Copy, Check, Users, Settings2, Share2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { FriendsListModal } from "./FriendsListModal";
 import { InviteModal } from "./InviteModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface WaitingRoomProps {
   gameState: GameState;
@@ -16,15 +19,64 @@ interface WaitingRoomProps {
 }
 
 export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSettings }: WaitingRoomProps) {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  // Track which player names we've already sent a request to
+  const [addedFriends, setAddedFriends] = useState<Set<string>>(new Set());
+  const [addingFriend, setAddingFriend] = useState<string | null>(null);
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(gameState.roomCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddFriend = async (playerName: string) => {
+    if (!user) { toast.error("Sign in to add friends!"); return; }
+    if (addedFriends.has(playerName)) return;
+    setAddingFriend(playerName);
+    try {
+      // Find the profile by username
+      const { data: profiles } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .eq("username", playerName)
+        .limit(1);
+
+      if (!profiles || profiles.length === 0) {
+        toast.error(`${playerName} doesn't have a registered profile.`);
+        return;
+      }
+      const friendId = profiles[0].id;
+      if (friendId === user.id) return;
+
+      // Check if already connected
+      const { data: existing } = await (supabase as any)
+        .from("friendships")
+        .select("id")
+        .or(`and(user_id_1.eq.${user.id},user_id_2.eq.${friendId}),and(user_id_1.eq.${friendId},user_id_2.eq.${user.id})`);
+
+      if (existing && existing.length > 0) {
+        toast.info(`Already connected with ${playerName}!`);
+        setAddedFriends(prev => new Set(prev).add(playerName));
+        return;
+      }
+
+      const { error } = await (supabase as any)
+        .from("friendships")
+        .insert({ user_id_1: user.id, user_id_2: friendId, status: "pending" });
+
+      if (error) throw error;
+      setAddedFriends(prev => new Set(prev).add(playerName));
+      toast.success(`Friend request sent to ${playerName}! 🤝`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send friend request.");
+    } finally {
+      setAddingFriend(null);
+    }
   };
 
   return (
@@ -95,14 +147,40 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
             {gameState.players.map((player, i) => (
               <div
                 key={player.id}
-                className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5 opacity-0 animate-fade-in-up"
+                className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3 opacity-0 animate-fade-in-up border border-white/5 hover:border-white/10 transition-all"
                 style={{ animationDelay: `${0.2 + i * 0.1}s` }}
               >
-                <span className="font-medium">{player.name}</span>
-                {player.isHost && (
-                  <span className="text-xs font-medium text-game-amber bg-game-amber/10 rounded-full px-2 py-0.5">
-                    Host
-                  </span>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-white/80">{player.name.substring(0,2).toUpperCase()}</span>
+                  </div>
+                  <span className="font-semibold text-sm truncate">{player.name}</span>
+                  {player.isHost && (
+                    <span className="text-[10px] font-bold text-game-amber bg-game-amber/10 rounded-full px-2 py-0.5 shrink-0">
+                      Host
+                    </span>
+                  )}
+                </div>
+                {/* Add Friend button — only for other players who are logged in users */}
+                {user && !player.isHost && player.name !== user.email && (
+                  <button
+                    onClick={() => handleAddFriend(player.name)}
+                    disabled={addingFriend === player.name}
+                    className={`ml-2 shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all active:scale-90 ${
+                      addedFriends.has(player.name)
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'
+                        : 'bg-game-cyan/10 hover:bg-game-cyan/20 text-game-cyan border border-game-cyan/20 hover:border-game-cyan/40'
+                    }`}
+                    title={addedFriends.has(player.name) ? 'Request sent!' : 'Add as Friend'}
+                  >
+                    {addingFriend === player.name ? (
+                      <span className="animate-spin w-3 h-3 border border-game-cyan border-t-transparent rounded-full" />
+                    ) : addedFriends.has(player.name) ? (
+                      <><Check className="w-3 h-3" /> Sent</>  
+                    ) : (
+                      <><UserPlus className="w-3 h-3" /> Add</>
+                    )}
+                  </button>
                 )}
               </div>
             ))}
