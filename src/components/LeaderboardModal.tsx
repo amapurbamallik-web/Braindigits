@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { X, Trophy, Bot, Swords } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { X, Trophy, Bot, Swords, UserPlus, Check, Clock } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { UserProfile } from "@/contexts/AuthContext";
+import { UserProfile, useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface LeaderboardModalProps {
   open: boolean;
@@ -11,6 +12,59 @@ interface LeaderboardModalProps {
 
 export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const [tab, setTab] = useState<"pvp" | "ai">("pvp");
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Lightweight friendships fetch to check statuses
+  const { data: friendships = [] } = useQuery({
+    queryKey: ["friendships", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await (supabase as any)
+        .from("friendships")
+        .select("id, user_id_1, user_id_2, status")
+        .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
+      return data || [];
+    },
+    enabled: open && !!user,
+  });
+
+  const getFriendStatus = (playerId: string) => {
+    if (!user || user.id === playerId) return "self";
+    const existing = friendships.find(f => f.user_id_1 === playerId || f.user_id_2 === playerId);
+    if (!existing) return "none";
+    if (existing.status === "accepted") return "friends";
+    return "pending";
+  };
+
+  const handleSendRequest = async (friendId: string, friendName: string) => {
+    if (!user) return;
+    const previous = queryClient.getQueryData(["friendships", user.id]);
+    try {
+      queryClient.setQueryData(["friendships", user.id], (old: any) => [
+        ...(old || []),
+        { id: `temp-${Date.now()}`, user_id_1: user.id, user_id_2: friendId, status: "pending" }
+      ]);
+      toast.success(`Friend request sent to ${friendName}`);
+
+      const { error: insertError } = await (supabase as any)
+        .from("friendships")
+        .insert({ user_id_1: user.id, user_id_2: friendId, status: "pending" });
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          toast.error(`Already friends or request pending with ${friendName}`);
+        } else {
+          throw insertError;
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["pending-friend-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friendships", user.id] });
+    } catch (err) {
+      queryClient.setQueryData(["friendships", user.id], previous);
+      toast.error("Failed to process request.");
+    }
+  };
 
   const withTimeout = <T,>(promise: Promise<T>, ms: number = 10000): Promise<T> => {
     return Promise.race([
@@ -36,6 +90,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
     },
     enabled: open,
     staleTime: 60000, // Cache for 1 minute
+    retry: false,
   });
 
   if (!open) return null;
@@ -122,11 +177,31 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                     <p className="text-xs text-muted-foreground">{player.total_games} Matches</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`text-xl font-bold ${tab === "pvp" ? "text-game-cyan" : "text-game-purple"}`}>
-                    {tab === "pvp" ? player.total_wins : player.ai_wins}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Wins</p>
+                <div className="flex items-center gap-3 text-right shrink-0">
+                  <div className="flex flex-col items-end">
+                    <p className={`text-xl font-bold ${tab === "pvp" ? "text-game-cyan" : "text-game-purple"}`}>
+                      {tab === "pvp" ? player.total_wins : player.ai_wins}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Wins</p>
+                  </div>
+                  
+                  {user && user.id !== player.id && (
+                    <div className="w-12 flex justify-end pr-1 border-l border-white/5 pl-3 ml-1">
+                      {getFriendStatus(player.id) === "friends" ? (
+                         <div className="w-7 h-7 rounded bg-game-cyan/10 flex items-center justify-center border border-game-cyan/30" title="Connected">
+                           <Check className="w-4 h-4 text-game-cyan" />
+                         </div>
+                      ) : getFriendStatus(player.id) === "pending" ? (
+                         <div className="w-7 h-7 rounded bg-game-amber/10 flex items-center justify-center border border-game-amber/30" title="Pending">
+                           <Clock className="w-4 h-4 text-game-amber" />
+                         </div>
+                      ) : (
+                         <button onClick={() => handleSendRequest(player.id, player.username)} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white text-white hover:text-black rounded-lg transition-all active:scale-95 border border-white/10 shadow-md" title="Add Friend">
+                           <UserPlus className="w-4 h-4" />
+                         </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))

@@ -72,6 +72,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
     },
     enabled: open && !!user,
     staleTime: 30000,
+    retry: false, // Stop React Query from silently retrying timeouts
   });
 
   const fetchError = fetchErrorRaw ? fetchErrorRaw.message : null;
@@ -278,7 +279,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
           
           {/* Floating Search Results */}
           {searchQuery && (
-             <div className="mt-3 bg-[#0a0a0f]/95 border border-white/10 rounded-2xl p-2 max-h-56 overflow-y-auto w-full absolute z-30 backdrop-blur-2xl shadow-2xl custom-scrollbar animate-in slide-in-from-top-2">
+             <div className="mt-3 bg-[#0a0a0f] border border-white/10 rounded-2xl p-2 max-h-56 overflow-y-auto w-full absolute z-40 shadow-[0_20px_50px_rgba(0,0,0,0.8)] custom-scrollbar animate-in slide-in-from-top-2">
                {searching ? (
                  <p className="text-xs text-muted-foreground text-center py-4 font-medium uppercase tracking-widest">Scanning network...</p>
                ) : searchResults.length === 0 ? (
