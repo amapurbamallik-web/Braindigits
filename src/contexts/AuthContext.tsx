@@ -156,14 +156,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         supabase.auth.signOut(),
         new Promise(resolve => setTimeout(resolve, 2000))
       ]);
+      toast.success("Logged out successfully! 👋", { duration: 4000 });
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
       // Force clear the underlying storage token to prevent "Setup Profile" zombie session on refresh
       localStorage.removeItem("braindigits-auth-v4");
       localStorage.removeItem("braindigits_profile");
-      // Bulletproof redirect to clean state (Splash Screen) and clear all in-memory ghosts
-      window.location.href = "/";
     }
   };
 
