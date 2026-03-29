@@ -42,9 +42,15 @@ export function usePresence(currentUserId: string | undefined): Set<string> {
     });
 
     return () => {
-      channel.untrack().then(() => {
+      try {
+        channel.untrack().then(() => {
+          supabase.removeChannel(channel);
+        }).catch(() => {
+          supabase.removeChannel(channel);
+        });
+      } catch (e) {
         supabase.removeChannel(channel);
-      });
+      }
     };
   }, [currentUserId]);
 
