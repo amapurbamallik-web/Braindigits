@@ -63,9 +63,11 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         isIncoming: r.user_id_2 === user.id && r.status === "pending"
       })).filter((f: any) => f.friend) as FriendshipData[];
     },
-    enabled: open && !!user,
-    staleTime: 30000,
-    retry: 2, // Give Supabase a couple of chances if it hits a connection hiccup during load
+    enabled: !!user?.id,        // Fire as soon as user is available, not just when modal opens
+    staleTime: 60000,           // Keep fresh for 1 minute
+    gcTime: 300000,             // Keep in cache for 5 minutes so modal opens instantly
+    retry: 2,
+    retryDelay: 1000,           // Wait 1s between retries
   });
 
   const fetchError = fetchErrorRaw ? fetchErrorRaw.message : null;

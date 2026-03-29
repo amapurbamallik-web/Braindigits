@@ -83,9 +83,11 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
       if (fetchError) throw new Error("Could not load leaderboard. Please try again.");
       return (data || []) as UserProfile[];
     },
-    enabled: open,
-    staleTime: 60000, // Cache for 1 minute
-    retry: 2, // Give Supabase a couple of chances if it hits a connection hiccup during load
+    enabled: true,              // Always load — data is public, no auth needed
+    staleTime: 120000,          // Cache for 2 minutes
+    gcTime: 600000,             // Keep in cache 10 minutes so modal opens instantly
+    retry: 2,
+    retryDelay: 1000,
   });
 
   if (!open) return null;

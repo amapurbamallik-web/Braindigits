@@ -36,7 +36,7 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   
-  // Initialize from LocalStorage to kill the visual flicker entirely
+  // Initialize profile immediately from cache so UI shows instantly
   const [profile, setProfile] = useState<UserProfile | null>(() => {
     try {
       const cached = localStorage.getItem("braindigits_profile");
@@ -47,10 +47,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   });
   
-  const [isLoading, setIsLoading] = useState(true);
+  // Start as false if we already have a cached profile — no need to show loading
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !localStorage.getItem("braindigits_profile");
+    } catch {
+      return true;
+    }
+  });
+
   const fetchingRef = React.useRef<string | null>(null);
 
-  // Sync profile to localStorage
+  // Sync profile to localStorage on every change
   useEffect(() => {
     if (profile) {
       localStorage.setItem("braindigits_profile", JSON.stringify(profile));
@@ -59,86 +67,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [profile]);
 
+  // Single fast fetch — no retry loops that block the UI thread
   const fetchProfile = async (userId: string) => {
     if (fetchingRef.current === userId) return;
     fetchingRef.current = userId;
 
-    let localProfile = null;
-    let success = false;
-    let lastErrMessage = "Unknown";
-
-    // Retry loop for potential lock starvation or network blips (8 retries = ~4 seconds)
-    for (let i = 0; i < 8; i++) {
-      try {
-        // Select explicit columns — tolerates missing columns like avatar_url before migration
-        const { data, error } = await (supabase as any)
-          .from("profiles")
-          .select("id, username, total_wins, total_games, ai_wins, avatar_url, created_at")
-          .eq("id", userId)
-          .single();
-        
-        if (error) {
-          if (error.code === 'PGRST116') {
-             // 0 rows found. Profile genuinely doesn't exist.
-             toast.error("Profile not found in database (PGRST116).", { duration: 5000 });
-             success = true;
-             localProfile = null;
-             break;
-          }
-          if (error.message?.includes("Lock") || error.message?.includes("stole it")) {
-            lastErrMessage = error.message;
-            await new Promise(r => setTimeout(r, 500));
-            continue;
-          }
-          throw error;
+    try {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, total_wins, total_games, ai_wins, avatar_url, created_at")
+        .eq("id", userId)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile genuinely doesn't exist yet (new user before setup)
+          setProfile(null);
+        } else {
+          console.error("fetchProfile error:", error);
+          // Don't wipe the cached profile on network hiccups
+          // Only clear if we have no cached data
         }
-        
-        success = true;
-        localProfile = data;
-        break;
-
-      } catch (err: any) {
-        lastErrMessage = err?.message || JSON.stringify(err);
-        if (err?.message?.includes("Lock") || err?.message?.includes("stole it")) {
-          await new Promise(r => setTimeout(r, 500));
-          continue;
-        }
-        console.error("fetchProfile error trace:", err);
+      } else {
+        setProfile(data as UserProfile);
       }
+    } catch (err: any) {
+      console.error("fetchProfile exception:", err);
+      // Network error — keep cached profile visible, don't lock the user out
+    } finally {
+      fetchingRef.current = null;
     }
-
-    if (success) {
-      setProfile(localProfile as UserProfile | null);
-    } else {
-      toast.error(`Fetch profile failed: ${lastErrMessage}`, { duration: 10000 });
-      console.error("Fetch profile failed permanently after retries.");
-      setProfile(null);
-    }
-    
-    fetchingRef.current = null;
   };
 
   useEffect(() => {
-    // We only rely on onAuthStateChange to prevent lock starvation.
-    // Supabase automatically emits an 'INITIAL_SESSION' event on load natively after checking storage.
+    // onAuthStateChange fires INITIAL_SESSION immediately from localStorage
+    // This means it's synchronous for cached sessions — no delay
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         const currentUser = session?.user ?? null;
         
         if (currentUser) {
-           setUser(currentUser);
-           await fetchProfile(currentUser.id);
+          setUser(currentUser);
+          // Don't await — fetch profile in background so isLoading clears immediately
+          fetchProfile(currentUser.id);
         } else {
-           setUser(null);
-           setProfile(null);
+          setUser(null);
+          setProfile(null);
         }
+        
+        // Unlock loading state right away after we know session status
         setIsLoading(false);
       }
     );
 
+    // Hard safety net — if Supabase never fires, unblock after 3s
     const fallbackTimeout = setTimeout(() => {
       setIsLoading(false);
-    }, 4000);
+    }, 3000);
 
     return () => {
       clearTimeout(fallbackTimeout);
@@ -147,11 +132,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = async () => {
-    // Optimistically log out in the UI immediately
+    // Optimistically clear UI immediately
     setUser(null);
     setProfile(null);
+    localStorage.removeItem("braindigits-auth-v4");
+    localStorage.removeItem("braindigits_profile");
     try {
-      // Race the signOut against a timeout in case the local storage lock hangs
       await Promise.race([
         supabase.auth.signOut(),
         new Promise(resolve => setTimeout(resolve, 2000))
@@ -159,10 +145,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Logged out successfully! 👋", { duration: 4000 });
     } catch (error) {
       console.error("Error signing out:", error);
-    } finally {
-      // Force clear the underlying storage token to prevent "Setup Profile" zombie session on refresh
-      localStorage.removeItem("braindigits-auth-v4");
-      localStorage.removeItem("braindigits_profile");
     }
   };
 
@@ -173,7 +155,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Instant optimistic update — no DB roundtrip needed for UI
   const updateProfileField = (fields: Partial<UserProfile>) => {
     setProfile(prev => prev ? { ...prev, ...fields } : prev);
   };
