@@ -90,12 +90,8 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
 
 function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSettings }) {
   const { profile } = useAuth();
-  const [playerName, setPlayerName] = useState(profile?.username || "");
+  const [playerName] = useState(() => profile?.username || `Guest-${Math.floor(1000 + Math.random() * 9000)}`);
   const [isStarted, setIsStarted] = useState(false);
-
-  useEffect(() => {
-    if (profile?.username) setPlayerName(profile.username);
-  }, [profile]);
 
   const {
     gameState,
@@ -140,22 +136,10 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
         <div className="max-w-md w-full p-6 md:p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-game-purple/20 shadow-[0_0_50px_rgba(171,71,188,0.15)] text-center animate-in fade-in zoom-in duration-500 relative z-10">
           <h2 className="text-3xl md:text-4xl font-extrabold mb-3 md:mb-4 tracking-tight text-white drop-shadow-md">Play with AI</h2>
           <p className="text-game-purple/80 text-base md:text-lg mb-6 md:mb-8 font-medium">Enter your name to challenge the bot.</p>
-          {profile?.username ? (
-            <div className="mb-6 p-4 bg-game-purple/10 border border-game-purple/20 rounded-2xl flex flex-col items-center gap-1">
-              <span className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Playing as</span>
-              <span className="text-2xl font-extrabold text-white">{profile.username}</span>
-            </div>
-          ) : (
-            <input 
-              type="text" 
-              placeholder="Your name" 
-              className="w-full p-3 md:p-4 rounded-xl bg-background/80 border border-game-purple/30 mb-6 focus:ring-2 focus:ring-game-purple outline-none transition-all text-white text-base md:text-lg placeholder:text-muted-foreground/50 text-center"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && setIsStarted(true)}
-              autoFocus
-            />
-          )}
+          <div className="mb-6 p-4 bg-game-purple/10 border border-game-purple/20 rounded-2xl flex flex-col items-center gap-1">
+            <span className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Playing as</span>
+            <span className="text-2xl font-extrabold text-white">{playerName}</span>
+          </div>
           <button 
             className="w-full p-3 md:p-4 rounded-xl bg-game-purple hover:bg-game-purple/90 active:scale-[0.98] text-white font-bold text-base md:text-lg transition-all shadow-[0_0_20px_rgba(171,71,188,0.4)]"
             onClick={() => setIsStarted(true)}
