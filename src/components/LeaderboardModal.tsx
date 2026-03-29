@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Trophy, Bot, Swords } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { UserProfile } from "@/contexts/AuthContext";
 
@@ -10,59 +11,24 @@ interface LeaderboardModalProps {
 
 export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const [tab, setTab] = useState<"pvp" | "ai">("pvp");
-  const [leaders, setLeaders] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(false); // Fix: start false, not true
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Reset state cleanly whenever modal closes
-    if (!open) {
-      setLoading(false);
-      setError(null);
-      return;
-    }
+  const { data: leaders = [], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ["leaderboard", tab],
+    queryFn: async () => {
+      const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
+      
+      const { data, error: fetchError } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, total_wins, ai_wins, total_games")
+        .order(orderColumn, { ascending: false })
+        .limit(50);
 
-    const fetchLeaders = async () => {
-      setLoading(true);
-      setError(null);
-
-      let timedOut = false;
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        setLoading(false);
-        setError("Request timed out. Check your connection and try again.");
-      }, 15000);
-
-      try {
-        const orderColumn = tab === "pvp" ? "total_wins" : "ai_wins";
-        
-        const { data, error: fetchError } = await (supabase as any)
-          .from("profiles")
-          .select("id, username, total_wins, ai_wins, total_games")
-          .order(orderColumn, { ascending: false })
-          .limit(50);
-
-        if (timedOut) return; // Discard if timeout already fired
-
-        if (fetchError) {
-          console.error("Error fetching leaderboard:", fetchError);
-          setError("Could not load leaderboard. Please try again.");
-        } else {
-          setLeaders(data || []);
-        }
-      } catch (err) {
-        if (!timedOut) {
-          console.error(err);
-          setError("An unexpected error occurred.");
-        }
-      } finally {
-        clearTimeout(timeoutId);
-        if (!timedOut) setLoading(false);
-      }
-    };
-
-    fetchLeaders();
-  }, [open, tab]);
+      if (fetchError) throw new Error("Could not load leaderboard. Please try again.");
+      return (data || []) as UserProfile[];
+    },
+    enabled: open,
+    staleTime: 60000, // Cache for 1 minute
+  });
 
   if (!open) return null;
 
@@ -114,15 +80,9 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-40 gap-4 text-center">
-              <p className="text-red-400 text-sm font-medium">{error}</p>
+              <p className="text-red-400 text-sm font-medium">{error instanceof Error ? error.message : "Failed to load"}</p>
               <button
-                onClick={() => {
-                  // Re-trigger by toggling tab then back (force re-effect)
-                  setLeaders([]);
-                  const currentTab = tab;
-                  setTab(currentTab === "pvp" ? "ai" : "pvp");
-                  setTimeout(() => setTab(currentTab), 50);
-                }}
+                onClick={() => refetch()}
                 className="px-4 py-2 rounded-xl bg-game-cyan/10 hover:bg-game-cyan/20 border border-game-cyan/30 text-game-cyan text-sm font-bold transition-all active:scale-95"
               >
                 Retry

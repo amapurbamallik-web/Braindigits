@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Mail, Lock, User, LogIn, UserPlus, BrainCircuit, ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Mail, Lock, User, LogIn, UserPlus, BrainCircuit, ArrowRight, Loader2, Check, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const checkTimeout = useRef<NodeJS.Timeout | null>(null);
   const { user, profile, refreshProfile } = useAuth();
   
   // Helper to prevent infinite hangs in Supabase JS due to local storage lock bugs
@@ -35,8 +37,46 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
       setPassword("");
       setUsername("");
       setLoading(false);
+      setUsernameStatus("idle");
     }
   }, [open]);
+
+  const needsProfileCompletion = user && !profile && !loading;
+
+  // Real-time username availability check
+  useEffect(() => {
+    if (!needsProfileCompletion || !username.trim()) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    setUsernameStatus("checking");
+
+    if (checkTimeout.current) clearTimeout(checkTimeout.current);
+
+    checkTimeout.current = setTimeout(async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("id")
+          .ilike("username", username.trim())
+          .neq("id", user?.id)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          setUsernameStatus("taken");
+        } else {
+          setUsernameStatus("available");
+        }
+      } catch (err) {
+        setUsernameStatus("idle");
+      }
+    }, 400);
+
+    return () => {
+      if (checkTimeout.current) clearTimeout(checkTimeout.current);
+    };
+  }, [username, needsProfileCompletion, user?.id]);
 
   if (!open) return null;
 
@@ -95,7 +135,26 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     setLoading(true);
     
     try {
-      // Intentionally avoiding .select().single() to prevent PGRST116 false alarms during UPSERT in some Supabase versions
+      // 1. Explicitly check for duplicate username (case-insensitive) to prevent "double usernames"
+      const { data: existing, error: checkError } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .ilike("username", username.trim())
+        .neq("id", user.id)
+        .limit(1);
+
+      if (checkError) {
+        console.error("Username check error:", checkError);
+        throw checkError;
+      }
+
+      if (existing && existing.length > 0) {
+        toast.error("That username is already taken. Please choose another!");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Intentionally avoiding .select().single() to prevent PGRST116 false alarms during UPSERT in some Supabase versions
       const { error } = await (supabase as any).from("profiles").upsert({
         id: user.id,
         username: username.trim()
@@ -122,7 +181,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     }
   };
 
-  const needsProfileCompletion = user && !profile && !loading;
+  // needsProfileCompletion relies on `user` existing but `profile` missing.
+  // We keep it dynamic but we calculated it earlier.
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl fade-in duration-300">
@@ -167,10 +227,26 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="bg-black/50 border-white/10 pl-12 h-14 rounded-2xl text-white placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-game-cyan focus-visible:border-transparent transition-all"
+                  className={`bg-black/50 border-white/10 pl-12 pr-10 h-14 rounded-2xl text-white placeholder:text-muted-foreground/50 focus-visible:ring-2 transition-all ${usernameStatus === 'taken' ? 'focus-visible:ring-red-500 border-red-500/50' : 'focus-visible:ring-game-cyan focus-visible:border-transparent'}`}
                 />
+                
+                {/* Visual UI indicators for username availability */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                  {usernameStatus === "checking" && <Loader2 className="h-5 w-5 animate-spin text-game-cyan" />}
+                  {usernameStatus === "available" && <Check className="h-5 w-5 text-game-success" />}
+                  {usernameStatus === "taken" && <XCircle className="h-5 w-5 text-red-500" />}
+                </div>
+
               </div>
-              <Button disabled={loading || !username.trim()} type="submit" className="w-full h-14 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-extrabold text-base rounded-2xl shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all active:scale-[0.98]">
+              
+              {usernameStatus === "taken" && (
+                <p className="text-xs text-red-400 font-medium px-2 animate-in fade-in">Gamertag is already taken.</p>
+              )}
+              {usernameStatus === "available" && (
+                <p className="text-xs text-game-success font-medium px-2 animate-in fade-in">Gamertag is available!</p>
+              )}
+
+              <Button disabled={loading || !username.trim() || usernameStatus === "checking" || usernameStatus === "taken"} type="submit" className="w-full h-14 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-extrabold text-base rounded-2xl shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all active:scale-[0.98]">
                 {loading ? "Registering..." : "Enter Arena"} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </form>

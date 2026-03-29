@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAudio } from "@/contexts/AudioContext";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 interface FriendsListProps {
   open: boolean;
@@ -25,9 +25,6 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const { user, profile } = useAuth();
   const { playSfx } = useAudio();
   const queryClient = useQueryClient();
-  const [friendships, setFriendships] = useState<FriendshipData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   
   // Search state
@@ -36,33 +33,17 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const [searchResults, setSearchResults] = useState<{id: string, username: string}[]>([]);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchFriends = async () => {
-    if (!user) return;
-    setLoading(true);
-    setFetchError(null);
-
-    let timedOut = false;
-    const timeoutId = setTimeout(() => {
-      timedOut = true;
-      setLoading(false);
-      setFetchError("Request timed out. Check your connection.");
-    }, 15000);
-
-    try {
+  const { data: friendships = [], isLoading: loading, error: fetchErrorRaw, refetch } = useQuery({
+    queryKey: ["friendships", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
       const { data: rels, error: relsError } = await (supabase as any)
         .from("friendships")
         .select("*")
         .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
-
-      if (timedOut) return; // Timeout already fired, discard result
-      if (relsError) throw relsError;
-
-      if (!rels || rels.length === 0) {
-        setFriendships([]);
-        setLoading(false); // Explicitly clear loading on early return
-        clearTimeout(timeoutId);
-        return;
-      }
+        
+      if (relsError) throw new Error("Failed to load friends");
+      if (!rels || rels.length === 0) return [];
 
       const friendIds = rels.map((r: any) => r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1);
       
@@ -71,41 +52,31 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         .select("id, username, total_wins, total_games, ai_wins")
         .in("id", friendIds);
 
-      if (timedOut) return;
-      if (profError) throw profError;
+      if (profError) throw new Error("Failed to load generic profiles");
 
       const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
 
-      const merged: FriendshipData[] = rels.map((r: any) => ({
+      return rels.map((r: any) => ({
         id: r.id,
         status: r.status,
         friend: profileMap.get(r.user_id_1 === user.id ? r.user_id_2 : r.user_id_1),
         isIncoming: r.user_id_2 === user.id && r.status === "pending"
-      })).filter((f: any) => f.friend);
+      })).filter((f: any) => f.friend) as FriendshipData[];
+    },
+    enabled: open && !!user,
+    staleTime: 30000,
+  });
 
-      setFriendships(merged);
-    } catch (err: any) {
-      if (!timedOut) {
-        console.error("Error fetching friends:", err);
-        setFetchError("Failed to load friends. Tap to retry.");
-      }
-    } finally {
-      clearTimeout(timeoutId); // Always clear, even if timeout fired first
-      if (!timedOut) setLoading(false);
-    }
-  };
+  const fetchError = fetchErrorRaw ? fetchErrorRaw.message : null;
 
   useEffect(() => {
-    if (open && user) {
-      fetchFriends();
-    } else {
-      setLoading(false);
-      setFetchError(null);
+    // Clean up search on close
+    if (!open) {
       setSearchQuery("");
       setSearchResults([]);
+      setExpandedId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user]);
+  }, [open]);
 
   // Handle Debounced Search
   useEffect(() => {
@@ -153,7 +124,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       isIncoming: false
     };
 
-    setFriendships(prev => [newRequest, ...prev]);
+    queryClient.setQueryData(["friendships", user.id], (prev: FriendshipData[] = []) => [newRequest, ...prev]);
     setSearchQuery(""); // Clear search to show the lists
 
     try {
@@ -169,8 +140,8 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       if (existing && existing.length > 0) {
          toast.error("You are already friends or have a pending request overlapping!");
          // Revert optimistic update
-         setFriendships(prev => prev.filter(f => f.id !== tempId));
-         fetchFriends();
+         queryClient.setQueryData(["friendships", user.id], (prev: FriendshipData[] = []) => prev.filter(f => f.id !== tempId));
+         queryClient.invalidateQueries({ queryKey: ["friendships", user.id] });
          return;
       }
 
@@ -189,23 +160,26 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       }
       
       // Quietly resync to get the real DB ID
-      fetchFriends();
+      queryClient.invalidateQueries({ queryKey: ["friendships", user.id] });
       queryClient.invalidateQueries({ queryKey: ["pending-friend-requests"] });
     } catch (err: any) {
       // Revert optimistic update on hard error
-      setFriendships(prev => prev.filter(f => f.id !== tempId));
+      queryClient.setQueryData(["friendships", user.id], (prev: FriendshipData[] = []) => prev.filter(f => f.id !== tempId));
       toast.error(err.message || "Failed to send request.");
     }
   };
 
   const respondToRequest = async (id: string, action: "accept" | "reject" | "cancel") => {
     playSfx('click');
+    if (!user) return;
+    
     // Optimistic update
-    const previous = [...friendships];
+    const previous = queryClient.getQueryData<FriendshipData[]>(["friendships", user.id]) || [];
+    
     if (action === "accept") {
-      setFriendships(prev => prev.map(f => f.id === id ? { ...f, status: "accepted" } : f));
+      queryClient.setQueryData(["friendships", user.id], (prev: FriendshipData[] = []) => prev.map(f => f.id === id ? { ...f, status: "accepted" } : f));
     } else {
-      setFriendships(prev => prev.filter(f => f.id !== id));
+      queryClient.setQueryData(["friendships", user.id], (prev: FriendshipData[] = []) => prev.filter(f => f.id !== id));
     }
 
     try {
@@ -217,9 +191,10 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         if (action === "cancel") toast.success("Request canceled.");
       }
       queryClient.invalidateQueries({ queryKey: ["pending-friend-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friendships", user.id] });
     } catch (err) {
       // Revert
-      setFriendships(previous);
+      queryClient.setQueryData(["friendships", user.id], previous);
       toast.error("Failed to process request.");
     }
   };
@@ -339,7 +314,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
             <div className="flex flex-col items-center justify-center py-10 gap-4 text-center">
               <p className="text-red-400 text-sm font-medium">{fetchError}</p>
               <button
-                onClick={fetchFriends}
+                onClick={() => refetch()}
                 className="px-4 py-2 rounded-xl bg-game-cyan/10 hover:bg-game-cyan/20 border border-game-cyan/30 text-game-cyan text-sm font-bold transition-all active:scale-95"
               >
                 Retry
