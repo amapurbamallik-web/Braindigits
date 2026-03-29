@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAudio } from "@/contexts/AudioContext";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { usePresence } from "@/hooks/usePresence";
 
 interface FriendsListProps {
   open: boolean;
@@ -32,6 +33,9 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{id: string, username: string}[]>([]);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Track real-time online presence of all users
+  const onlineIds = usePresence(user?.id);
 
   const { data: friendships = [], isLoading: loading, error: fetchErrorRaw, refetch } = useQuery({
     queryKey: ["friendships", user?.id],
@@ -367,10 +371,18 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="flex items-center justify-between mb-3 px-1">
                     <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Active Connections</p>
-                    <span className="text-[10px] font-bold text-muted-foreground/50 bg-white/5 px-2 py-0.5 rounded-full">{friends.length}</span>
+                    <div className="flex items-center gap-1.5">
+                      {onlineIds.size > 0 && (
+                        <span className="text-[10px] font-black text-green-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                          {[...friends].filter(f => onlineIds.has(f.friend.id)).length} online
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold text-muted-foreground/50 bg-white/5 px-2 py-0.5 rounded-full">{friends.length}</span>
+                    </div>
                   </div>
                   <div className="space-y-3">
-                    {friends.map(friend => (
+                    {[...friends].sort((a, b) => (onlineIds.has(b.friend.id) ? 1 : 0) - (onlineIds.has(a.friend.id) ? 1 : 0)).map(friend => (
                       <div key={friend.id} className="flex flex-col bg-black/40 rounded-[1.5rem] border border-white/5 group overflow-hidden transition-all hover:bg-black/60 hover:border-white/10">
                         
                         <div 
@@ -381,12 +393,20 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                           }}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                              <span className="text-xs font-black text-white/90 drop-shadow-md">
-                                {friend.friend.username.substring(0,2).toUpperCase()}
+                            <div className="relative shrink-0">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                <span className="text-xs font-black text-white/90 drop-shadow-md">
+                                  {friend.friend.username.substring(0,2).toUpperCase()}
+                                </span>
+                              </div>
+                              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0a0a0f] transition-all duration-500 ${onlineIds.has(friend.friend.id) ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)]' : 'bg-white/20'}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-white text-base font-bold truncate block">{friend.friend.username}</span>
+                              <span className={`text-[10px] font-bold uppercase tracking-widest ${onlineIds.has(friend.friend.id) ? 'text-green-400' : 'text-white/25'}`}>
+                                {onlineIds.has(friend.friend.id) ? '● Online' : '● Offline'}
                               </span>
                             </div>
-                            <span className="text-white text-base font-bold truncate">{friend.friend.username}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 shrink-0">
