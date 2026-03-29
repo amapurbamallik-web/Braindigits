@@ -156,23 +156,32 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         setGameState((prev) => {
           if (prev && prev.status === 'playing' && prev.turnDeadline && Date.now() >= prev.turnDeadline) {
             const currentPlayer = prev.players[prev.currentTurnIndex];
-            
             const maxHearts = prev.maxHearts ?? 3;
-            const currentHearts = currentPlayer.hearts ?? maxHearts;
-            const newHearts = Math.max(0, currentHearts - 1);
-            const isEliminated = newHearts <= 0;
+            const heartsEnabled = maxHearts > 0;
 
-            const updatedPlayers = prev.players.map((p) =>
-              p.id === currentPlayer.id
-                ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 }
-                : p
-            );
+            let updatedPlayers = prev.players;
+            if (heartsEnabled) {
+              const currentHearts = currentPlayer.hearts ?? maxHearts;
+              const newHearts = Math.max(0, currentHearts - 1);
+              const isEliminated = newHearts <= 0;
+              updatedPlayers = prev.players.map((p) =>
+                p.id === currentPlayer.id
+                  ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 }
+                  : p
+              );
+            } else {
+              updatedPlayers = prev.players.map((p) =>
+                p.id === currentPlayer.id
+                  ? { ...p, missedTurns: (p.missedTurns || 0) + 1 }
+                  : p
+              );
+            }
 
             const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
             let status: GameState["status"] = prev.status;
             let winnerId = prev.winnerId;
 
-            if (activePlayers.length === 1) {
+            if (heartsEnabled && activePlayers.length === 1) {
               status = "finished";
               winnerId = activePlayers[0].id;
             }

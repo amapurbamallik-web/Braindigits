@@ -253,13 +253,24 @@ export function useGameRoom() {
     if (currentPlayer.id !== playerId) return;
 
     const maxHearts = gameState.maxHearts ?? 3;
-    const currentHearts = currentPlayer.hearts ?? maxHearts;
-    const newHearts = Math.max(0, currentHearts - 1);
-    const isEliminated = newHearts <= 0;
+    const heartsEnabled = maxHearts > 0;
 
-    const updatedPlayers = gameState.players.map(p =>
-      p.id === playerId ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 } : p
-    );
+    let updatedPlayers = gameState.players;
+    let isEliminated = false;
+
+    if (heartsEnabled) {
+      const currentHearts = currentPlayer.hearts ?? maxHearts;
+      const newHearts = Math.max(0, currentHearts - 1);
+      isEliminated = newHearts <= 0;
+      updatedPlayers = gameState.players.map(p =>
+        p.id === playerId ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 } : p
+      );
+    } else {
+      // Hearts disabled — just track missed turns, no elimination
+      updatedPlayers = gameState.players.map(p =>
+        p.id === playerId ? { ...p, missedTurns: (p.missedTurns || 0) + 1 } : p
+      );
+    }
 
     const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
     
@@ -267,7 +278,7 @@ export function useGameRoom() {
     let winnerId = gameState.winnerId;
     let nextTurnIndex = gameState.currentTurnIndex;
 
-    if (activePlayers.length <= 1 && gameState.players.length > 1) {
+    if (heartsEnabled && activePlayers.length <= 1 && gameState.players.length > 1) {
       status = "finished";
       winnerId = activePlayers.length === 1 ? activePlayers[0].id : null;
     } else {

@@ -13,6 +13,17 @@ interface RoomSettingsModalProps {
   readOnly?: boolean;
 }
 
+// Compact toggle switch
+const Toggle = ({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) => (
+  <button
+    onClick={onToggle}
+    disabled={disabled}
+    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${disabled ? 'cursor-default' : 'cursor-pointer'} ${on ? 'bg-game-cyan' : 'bg-muted/60'}`}
+  >
+    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+  </button>
+);
+
 export function RoomSettingsModal({
   open,
   onClose,
@@ -27,36 +38,11 @@ export function RoomSettingsModal({
 
   if (!open) return null;
 
-  const handleRangeChange = (val: number) => {
-    if (!readOnly && onSettingsChange) {
-      onSettingsChange({ ...settings, maxRange: val });
-    }
-  };
+  const heartsEnabled = (settings.maxHearts ?? 3) > 0;
 
-  const handleTimerEnabledChange = () => {
+  const change = (partial: Partial<GameSettings>) => {
     if (!readOnly && onSettingsChange) {
-      onSettingsChange({ ...settings, timerEnabled: !settings.timerEnabled });
-    }
-  };
-
-  const handleTimerDurationChange = (val: number) => {
-    if (!readOnly && onSettingsChange) {
-      onSettingsChange({ ...settings, timerDuration: val });
-    }
-  };
-
-  const handleHeartsChange = (val: number) => {
-    if (!readOnly && onSettingsChange) {
-      onSettingsChange({ ...settings, maxHearts: val });
-    }
-  };
-
-  const handleCustomHeartsSubmit = () => {
-    if (readOnly) return;
-    const val = parseInt(customHeartsInput);
-    if (!isNaN(val) && val >= 1 && val <= 10 && onSettingsChange) {
-      onSettingsChange({ ...settings, maxHearts: val });
-      setCustomHeartsInput("");
+      onSettingsChange({ ...settings, ...partial });
     }
   };
 
@@ -64,7 +50,7 @@ export function RoomSettingsModal({
     if (readOnly) return;
     const val = parseInt(customRangeInput);
     if (!isNaN(val) && val > 1 && onSettingsChange) {
-      onSettingsChange({ ...settings, maxRange: val });
+      change({ maxRange: val });
       setCustomRangeInput("");
     }
   };
@@ -73,221 +59,231 @@ export function RoomSettingsModal({
     if (readOnly) return;
     const val = parseInt(customTimerInput);
     if (!isNaN(val) && val >= 5 && onSettingsChange) {
-      onSettingsChange({ ...settings, timerDuration: val * 1000 });
+      change({ timerDuration: val * 1000 });
       setCustomTimerInput("");
     }
   };
 
+  const handleCustomHeartsSubmit = () => {
+    if (readOnly) return;
+    const val = parseInt(customHeartsInput);
+    if (!isNaN(val) && val >= 1 && val <= 10 && onSettingsChange) {
+      change({ maxHearts: val });
+      setCustomHeartsInput("");
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-[#0f0f18]/95 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-game-cyan" /> 
+    // z-[100] ensures it renders above all other page elements
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-[#0d0d16]/98 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+
+        {/* Header — sticky */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5 shrink-0">
+          <h2 className="text-base font-black text-white flex items-center gap-2 tracking-tight">
+            <Settings2 className="w-4 h-4 text-game-cyan" />
             {readOnly ? "Room Settings" : "Game Settings"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-muted-foreground active:scale-95 transition-all"
+            className="p-1 rounded-lg hover:bg-white/10 text-muted-foreground active:scale-95 transition-all"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
-        
-        <div className="space-y-6">
-          {/* Max Range Toggle Group */}
-          <div className="space-y-3">
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto custom-scrollbar flex-1 px-5 py-4 space-y-5">
+
+          {/* ── Number Range ── */}
+          <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Number Range</label>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Number Range</p>
               {![100, 200, 500, 1000].includes(settings.maxRange) && (
-                <span className="text-xs font-bold text-game-cyan bg-game-cyan/10 px-2 py-0.5 rounded-full border border-game-cyan/20">
-                  Custom: 1-{settings.maxRange}
+                <span className="text-[10px] font-bold text-game-cyan bg-game-cyan/10 px-2 py-0.5 rounded-full border border-game-cyan/20">
+                  1–{settings.maxRange}
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {[100, 200, 500, 1000].map(val => (
                 <button
                   key={val}
                   disabled={readOnly}
-                  role="radio"
-                  aria-checked={settings.maxRange === val}
-                  onClick={() => handleRangeChange(val)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all border ${
-                    settings.maxRange === val 
-                      ? 'bg-game-cyan/20 border-game-cyan text-game-cyan shadow-[0_0_10px_rgba(0,229,255,0.2)]'
-                      : 'bg-black/30 border-transparent text-muted-foreground ' + (readOnly ? '' : 'hover:bg-black/50 cursor-pointer')
-                  } ${readOnly ? 'cursor-default opacity-90' : ''}`}
+                  onClick={() => change({ maxRange: val })}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all border ${
+                    settings.maxRange === val
+                      ? 'bg-game-cyan/20 border-game-cyan text-game-cyan'
+                      : `bg-black/30 border-transparent text-muted-foreground ${readOnly ? '' : 'hover:bg-white/5 cursor-pointer'}`
+                  } ${readOnly ? 'cursor-default' : ''}`}
                 >
                   1-{val}
                 </button>
               ))}
             </div>
             {!readOnly && (
-              <div className="flex gap-2 relative mt-2">
+              <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder="Custom Max (e.g. 999)"
+                  placeholder="Custom max…"
                   value={customRangeInput}
-                  onChange={(e) => setCustomRangeInput(e.target.value)}
-                  className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-game-cyan/50 text-white placeholder:text-muted-foreground/50"
-                  onKeyDown={(e) => e.key === "Enter" && handleCustomRangeSubmit()}
+                  onChange={e => setCustomRangeInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCustomRangeSubmit()}
+                  className="bg-black/20 border-white/10 text-xs h-9 flex-1 text-white placeholder:text-muted-foreground/40"
                 />
-                <Button 
-                  onClick={handleCustomRangeSubmit}
-                  className="h-10 px-4 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-bold transition-transform active:scale-95"
-                >
+                <Button onClick={handleCustomRangeSubmit} className="h-9 px-3 bg-game-cyan hover:bg-game-cyan/90 text-game-dark text-xs font-bold active:scale-95">
                   Set
                 </Button>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Timer Toggle & Duration */}
-          <div className="p-4 rounded-2xl bg-black/20 border border-white/5 space-y-4">
+          {/* ── Turn Timer ── */}
+          <section className="bg-black/20 border border-white/5 rounded-xl p-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white">Turn Timer</p>
-                <p className="text-xs text-muted-foreground">Limit time per guess</p>
+                <p className="text-sm font-semibold text-white leading-tight">Turn Timer</p>
+                <p className="text-[11px] text-muted-foreground">Time limit per guess</p>
               </div>
-              <button 
-                disabled={readOnly}
-                onClick={handleTimerEnabledChange}
-                className={`relative w-12 h-6 rounded-full transition-colors ${readOnly ? 'cursor-default' : 'cursor-pointer'} ${settings.timerEnabled ? 'bg-game-cyan' : 'bg-muted'}`}
-              >
-                <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${settings.timerEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
+              <Toggle on={settings.timerEnabled} onToggle={() => change({ timerEnabled: !settings.timerEnabled })} disabled={readOnly} />
             </div>
-            
             {settings.timerEnabled && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  {![10000, 15000, 30000].includes(settings.timerDuration ?? 15000) && (
-                    <span className="text-xs font-bold text-game-purple bg-game-purple/10 px-2 py-0.5 rounded-full border border-game-purple/20 block ml-auto">
-                      Custom: {(settings.timerDuration ?? 15000) / 1000}s
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[10000, 15000, 30000].map(duration => (
+              <>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[10000, 15000, 30000].map(d => (
                     <button
-                      key={duration}
+                      key={d}
                       disabled={readOnly}
-                      onClick={() => handleTimerDurationChange(duration)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                        settings.timerDuration === duration 
-                          ? 'bg-game-purple/20 border-game-purple text-game-purple shadow-[0_0_10px_rgba(171,71,188,0.2)]' 
-                          : 'bg-black/30 border-transparent text-muted-foreground ' + (readOnly ? '' : 'hover:bg-black/50 cursor-pointer')
-                      } ${readOnly ? 'cursor-default opacity-90' : ''}`}
+                      onClick={() => change({ timerDuration: d })}
+                      className={`py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                        settings.timerDuration === d
+                          ? 'bg-game-purple/20 border-game-purple text-game-purple'
+                          : `bg-black/30 border-transparent text-muted-foreground ${readOnly ? '' : 'hover:bg-white/5 cursor-pointer'}`
+                      } ${readOnly ? 'cursor-default' : ''}`}
                     >
-                      {duration / 1000}s
+                      {d / 1000}s
                     </button>
                   ))}
                 </div>
                 {!readOnly && (
-                  <div className="flex gap-2 relative mt-2">
+                  <div className="flex gap-2">
                     <Input
                       type="number"
-                      placeholder="Custom Time (secs)"
+                      placeholder="Custom secs…"
                       value={customTimerInput}
-                      onChange={(e) => setCustomTimerInput(e.target.value)}
-                      className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-game-purple/50 text-white placeholder:text-muted-foreground/50"
-                      onKeyDown={(e) => e.key === "Enter" && handleCustomTimerSubmit()}
+                      onChange={e => setCustomTimerInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleCustomTimerSubmit()}
+                      className="bg-black/20 border-white/10 text-xs h-9 flex-1 text-white placeholder:text-muted-foreground/40"
                     />
-                    <Button 
-                      onClick={handleCustomTimerSubmit}
-                      className="h-10 px-4 bg-game-purple hover:bg-game-purple/90 text-white font-bold transition-transform active:scale-95"
-                    >
+                    <Button onClick={handleCustomTimerSubmit} className="h-9 px-3 bg-game-purple hover:bg-game-purple/90 text-white text-xs font-bold active:scale-95">
                       Set
                     </Button>
                   </div>
                 )}
-              </div>
+                {![10000, 15000, 30000].includes(settings.timerDuration ?? 15000) && (
+                  <p className="text-[10px] text-game-purple text-right">Custom: {(settings.timerDuration ?? 15000) / 1000}s</p>
+                )}
+              </>
             )}
-          </div>
+          </section>
 
-          {/* Hearts / Lives */}
-          <div className="space-y-3">
+          {/* ── Hearts / Lives ── */}
+          <section className="bg-black/20 border border-white/5 rounded-xl p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Heart className="w-4 h-4 text-red-400" />
-                Lives per Game
-              </label>
-              {(settings.maxHearts ?? 3) > 5 && (
-                <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full border border-red-400/20">
-                  Custom: {settings.maxHearts} ❤️
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {[1, 2, 3, 4, 5].map(val => (
-                <button
-                  key={val}
-                  disabled={readOnly}
-                  onClick={() => handleHeartsChange(val)}
-                  className={`py-2.5 rounded-xl text-sm font-bold transition-all border flex flex-col items-center gap-0.5 ${
-                    (settings.maxHearts ?? 3) === val
-                      ? 'bg-red-500/20 border-red-400 text-red-400 shadow-[0_0_10px_rgba(248,113,113,0.25)]'
-                      : 'bg-black/30 border-transparent text-muted-foreground ' + (readOnly ? '' : 'hover:bg-black/50 cursor-pointer')
-                  } ${readOnly ? 'cursor-default opacity-90' : ''}`}
-                >
-                  <span className="text-base leading-none">{'❤️'.repeat(Math.min(val, 3))}</span>
-                  <span className="text-[10px] font-black">{val}</span>
-                </button>
-              ))}
-            </div>
-            {/* Heart row display */}
-            <div className="flex items-center justify-center gap-1 py-1">
-              {Array.from({ length: Math.min(settings.maxHearts ?? 3, 10) }).map((_, i) => (
-                <span key={i} className="text-lg leading-none" style={{ filter: 'drop-shadow(0 0 4px rgba(248,113,113,0.6))' }}>❤️</span>
-              ))}
-            </div>
-            {!readOnly && (
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="number"
-                  placeholder="Custom (max 10)"
-                  value={customHeartsInput}
-                  min={1}
-                  max={10}
-                  onChange={(e) => setCustomHeartsInput(e.target.value)}
-                  className="bg-black/20 border-white/10 text-sm h-10 flex-1 focus-visible:ring-red-400/50 text-white placeholder:text-muted-foreground/50"
-                  onKeyDown={(e) => e.key === "Enter" && handleCustomHeartsSubmit()}
-                />
-                <Button
-                  onClick={handleCustomHeartsSubmit}
-                  className="h-10 px-4 bg-red-500 hover:bg-red-500/90 text-white font-bold transition-transform active:scale-95"
-                >
-                  Set
-                </Button>
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-red-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-white leading-tight">Lives System</p>
+                  <p className="text-[11px] text-muted-foreground">Lose a heart when time runs out</p>
+                </div>
               </div>
-            )}
-          </div>
+              {/* Hearts ON/OFF toggle — 0 means off */}
+              <Toggle
+                on={heartsEnabled}
+                onToggle={() => change({ maxHearts: heartsEnabled ? 0 : 3 })}
+                disabled={readOnly}
+              />
+            </div>
 
-          {/* Game Audio */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5">
-            <div className="flex items-center gap-3">
-              {isSoundEnabled ? <Volume2 className="w-5 h-5 text-game-amber" /> : <VolumeX className="w-5 h-5 text-muted-foreground" />}
+            {heartsEnabled && (
+              <>
+                {/* Quick-select 1-5 */}
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[1, 2, 3, 4, 5].map(val => (
+                    <button
+                      key={val}
+                      disabled={readOnly}
+                      onClick={() => change({ maxHearts: val })}
+                      className={`py-2 rounded-lg text-xs font-bold transition-all border flex flex-col items-center gap-0.5 ${
+                        (settings.maxHearts ?? 3) === val
+                          ? 'bg-red-500/20 border-red-400 text-red-400'
+                          : `bg-black/30 border-transparent text-muted-foreground ${readOnly ? '' : 'hover:bg-white/5 cursor-pointer'}`
+                      } ${readOnly ? 'cursor-default' : ''}`}
+                    >
+                      <span className="text-sm leading-none">{'❤️'.repeat(Math.min(val, 3))}</span>
+                      <span className="text-[9px] font-black">{val}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Preview hearts */}
+                <div className="flex items-center justify-center gap-0.5">
+                  {Array.from({ length: Math.min(settings.maxHearts ?? 3, 10) }).map((_, i) => (
+                    <span key={i} className="text-base leading-none" style={{ filter: 'drop-shadow(0 0 3px rgba(248,113,113,0.5))' }}>❤️</span>
+                  ))}
+                  {(settings.maxHearts ?? 3) > 5 && (
+                    <span className="text-[10px] font-bold text-red-400 ml-1">×{settings.maxHearts}</span>
+                  )}
+                </div>
+
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Custom (max 10)"
+                      value={customHeartsInput}
+                      min={1} max={10}
+                      onChange={e => setCustomHeartsInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleCustomHeartsSubmit()}
+                      className="bg-black/20 border-white/10 text-xs h-9 flex-1 text-white placeholder:text-muted-foreground/40"
+                    />
+                    <Button onClick={handleCustomHeartsSubmit} className="h-9 px-3 bg-red-500 hover:bg-red-600 text-white text-xs font-bold active:scale-95">
+                      Set
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!heartsEnabled && (
+              <p className="text-[11px] text-muted-foreground text-center py-1">
+                Hearts disabled — timer expiry skips turn only
+              </p>
+            )}
+          </section>
+
+          {/* ── Sound Effects ── */}
+          <section className="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-2.5">
+              {isSoundEnabled ? <Volume2 className="w-4 h-4 text-game-amber" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
               <div>
-                <p className="text-sm font-medium text-white">Sound Effects</p>
-                <p className="text-xs text-muted-foreground">Personal device audio</p>
+                <p className="text-sm font-semibold text-white leading-tight">Sound Effects</p>
+                <p className="text-[11px] text-muted-foreground">Personal device audio</p>
               </div>
             </div>
-            <button 
-              onClick={toggleSound}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer ${isSoundEnabled ? 'bg-game-amber/20 text-game-amber' : 'bg-muted/30 text-muted-foreground'}`}
-            >
-              {isSoundEnabled ? 'ON' : 'OFF'}
-            </button>
-          </div>
+            <Toggle on={isSoundEnabled} onToggle={toggleSound} />
+          </section>
         </div>
 
-        <Button
-          onClick={onClose}
-          className="w-full mt-8 h-12 bg-white hover:bg-gray-200 text-black font-bold text-base rounded-xl active:scale-[0.98] transition-transform"
-        >
-          {readOnly ? 'Close Settings' : 'Save & Close'}
-        </Button>
+        {/* Footer — sticky */}
+        <div className="px-5 pb-4 pt-3 border-t border-white/5 shrink-0">
+          <Button
+            onClick={onClose}
+            className="w-full h-10 bg-white hover:bg-gray-100 text-black font-bold text-sm rounded-xl active:scale-[0.98] transition-transform"
+          >
+            {readOnly ? 'Close' : 'Save & Close'}
+          </Button>
+        </div>
       </div>
     </div>
   );

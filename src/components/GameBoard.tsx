@@ -191,6 +191,10 @@ export function GameBoard({
   // Winner screen
   if (gameState.status === "finished" && winner) {
     const isMe = winner.id === playerId;
+    // Detect how the win happened
+    const losingPlayers = gameState.players.filter(p => p.id !== winner.id);
+    const wonByElimination = losingPlayers.some(p => p.isEliminated && (p.hearts ?? 1) <= 0);
+    const wonByGuess = !wonByElimination && winner.guesses.length > 0 && winner.guesses[winner.guesses.length - 1]?.hint === 'correct';
     return (
       <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
         <div className="w-full flex justify-end md:justify-between items-center z-20 pointer-events-none shrink-0 mb-4">
@@ -199,14 +203,26 @@ export function GameBoard({
         <div className="w-full max-w-md text-center shrink-0 opacity-0 animate-fade-in-up relative z-10 my-auto py-6" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-game-amber/15 mb-4 animate-bounce-subtle">
-              <Trophy className="h-10 w-10 text-game-amber" />
+              {wonByElimination ? (
+                <span className="text-4xl">💀</span>
+              ) : (
+                <Trophy className="h-10 w-10 text-game-amber" />
+              )}
             </div>
             <h2 className="text-3xl font-bold tracking-tight">
               {isMe ? "You won!" : `${winner.name} wins!`}
             </h2>
-            <p className="text-muted-foreground mt-2">
-              Guessed correctly in {winner.attempts} attempt{winner.attempts !== 1 ? "s" : ""}
-            </p>
+            {wonByElimination ? (
+              <p className="text-muted-foreground mt-2">
+                {isMe ? "Opponent ran out of lives! ❤️" : `${winner.name} survived — you ran out of lives!`}
+              </p>
+            ) : wonByGuess ? (
+              <p className="text-muted-foreground mt-2">
+                Guessed correctly in {winner.attempts} attempt{winner.attempts !== 1 ? "s" : ""}
+              </p>
+            ) : (
+              <p className="text-muted-foreground mt-2">Round complete!</p>
+            )}
             <p className="text-sm text-muted-foreground mt-1">
               The number was{" "}
               <span className="font-mono font-bold text-game-cyan">{gameState.targetNumber}</span>
