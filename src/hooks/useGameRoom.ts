@@ -73,7 +73,7 @@ export function useGameRoom() {
             players: [...current.players, newPlayer],
           };
           setGameState(updated);
-          channel.send({
+          safeSend(channel, {
             type: "broadcast",
             event: "game_update",
             payload: { state: updated },
@@ -95,6 +95,15 @@ export function useGameRoom() {
     },
     [cleanup]
   );
+
+  const safeSend = useCallback((channel: ReturnType<typeof supabase.channel> | null, payload: any) => {
+    if (!channel) return;
+    try {
+      safeSend(channel, payload);
+    } catch (e) {
+      console.warn('Failed to send message via Supabase RT', e);
+    }
+  }, []);
 
   const createRoom = useCallback(
     (playerName: string, settings: import("@/lib/game-types").GameSettings) => {
@@ -128,7 +137,7 @@ export function useGameRoom() {
       setGameState(state);
       const channel = subscribeToChannel(roomCode, true);
       setTimeout(() => {
-        channel.send({
+        safeSend(channel, {
           type: "broadcast",
           event: "game_update",
           payload: { state },
@@ -154,7 +163,7 @@ export function useGameRoom() {
       };
       const channel = subscribeToChannel(roomCode.toUpperCase(), false);
       setTimeout(() => {
-        channel.send({
+        safeSend(channel, {
           type: "broadcast",
           event: "player_join",
           payload: { player },
@@ -186,7 +195,7 @@ export function useGameRoom() {
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "game_update",
       payload: { state: updated },
@@ -241,7 +250,7 @@ export function useGameRoom() {
       };
 
       setGameState(updated);
-      channelRef.current.send({
+      safeSend(channelRef.current, {
         type: "broadcast",
         event: "game_update",
         payload: { state: updated },
@@ -302,7 +311,7 @@ export function useGameRoom() {
     };
 
     setGameState(updated);
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "game_update",
       payload: { state: updated },
@@ -332,7 +341,7 @@ export function useGameRoom() {
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "game_update",
       payload: { state: updated },
@@ -349,7 +358,7 @@ export function useGameRoom() {
     const amHost = gameState.players.find(p => p.id === playerId)?.isHost ?? false;
     if (!amHost) return;
     // Broadcast kick — the target player will auto-leave on receiving this
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "kick_player",
       payload: { targetPlayerId },
@@ -360,7 +369,7 @@ export function useGameRoom() {
       players: gameState.players.filter(p => p.id !== targetPlayerId),
     };
     setGameState(updated);
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "game_update",
       payload: { state: updated },
@@ -398,7 +407,7 @@ export function useGameRoom() {
         : gameState.turnDeadline,
     };
 
-    channelRef.current.send({
+    safeSend(channelRef.current, {
       type: "broadcast",
       event: "game_update",
       payload: { state: updated },
@@ -460,7 +469,7 @@ export function useGameRoom() {
         maxHearts: newSettings.maxHearts ?? 3,
       };
       setGameState(updated);
-      channelRef.current.send({
+      safeSend(channelRef.current, {
         type: "broadcast",
         event: "game_update",
         payload: { state: updated },
