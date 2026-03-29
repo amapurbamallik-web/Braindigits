@@ -46,14 +46,26 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
 
   useGameSounds(gameState, playerId);
 
+  const [isExiting, setIsExiting] = useState(false);
+
   const handleLeave = () => {
+    if (isExiting) return;
+    setIsExiting(true);
     leaveRoom();
-    onExit();
+    // Wait for gameState=null re-render to settle before switching mode
+    setTimeout(() => {
+      onExit();
+    }, 250);
   };
 
   const handleLeaveEarly = () => {
+    if (isExiting) return;
+    setIsExiting(true);
     leaveGameEarly();
-    onExit();
+    // Wait for broadcast + cleanup to finish before switching mode
+    setTimeout(() => {
+      onExit();
+    }, 250);
   };
 
   if (!gameState) {

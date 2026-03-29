@@ -7,6 +7,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import confetti from "canvas-confetti";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
+import { LeaveConfirmModal } from "./LeaveConfirmModal";
 
 // Hearts display component
 const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; maxHearts: number; size?: 'sm' | 'lg' }) => {
@@ -121,6 +122,8 @@ export function GameBoard({
   const [guessInput, setGuessInput] = useState("");
   const [inputError, setInputError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showLeaveConfirmEarly, setShowLeaveConfirmEarly] = useState(false);
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const currentTurnPlayer = gameState.players[gameState.currentTurnIndex];
@@ -233,10 +236,13 @@ export function GameBoard({
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={onLeave} className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50">
-              <LogOut className="h-4 w-4 mr-2" />
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 font-bold text-sm transition-all active:scale-[0.97]"
+            >
+              <LogOut className="h-4 w-4" />
               Leave
-            </Button>
+            </button>
             {isHost && (
               <Button onClick={onRestart} className="flex-1 h-12 font-semibold active:scale-[0.97] transition-transform bg-game-cyan hover:bg-game-cyan/90 text-game-dark">
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -268,6 +274,16 @@ export function GameBoard({
           />
         </div>
         <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
+
+        {/* Leave confirm — winner screen */}
+        <LeaveConfirmModal
+          open={showLeaveConfirm}
+          title="Leave the Game?"
+          message="Are you sure you want to leave? You can play again or check scores before leaving."
+          confirmLabel="Yes, Leave"
+          onCancel={() => setShowLeaveConfirm(false)}
+          onConfirm={() => { setShowLeaveConfirm(false); onLeave(); }}
+        />
       </div>
     );
   }
@@ -292,9 +308,9 @@ export function GameBoard({
             </span>
             {onLeaveEarly && (
               <button 
-                onClick={onLeaveEarly}
-                className="ml-2 p-1.5 rounded-md hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors"
-                title="Leave Match"
+                onClick={() => setShowLeaveConfirmEarly(true)}
+                className="ml-2 p-1.5 rounded-md bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all active:scale-90"
+                title="Leave Match Early"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -440,6 +456,19 @@ export function GameBoard({
         )}
       </div>
       <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-40 hover:opacity-100 transition-opacity" />
+
+      {/* Early-leave confirm modal (while mid-game) */}
+      <LeaveConfirmModal
+        open={showLeaveConfirmEarly}
+        title="Abandon the Match?"
+        message="If you leave now, you'll forfeit this round and your opponent will win. Are you sure?"
+        confirmLabel="Yes, Abandon Match"
+        onCancel={() => setShowLeaveConfirmEarly(false)}
+        onConfirm={() => {
+          setShowLeaveConfirmEarly(false);
+          if (onLeaveEarly) onLeaveEarly();
+        }}
+      />
     </div>
   );
 }

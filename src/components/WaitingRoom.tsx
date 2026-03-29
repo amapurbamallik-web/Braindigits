@@ -9,6 +9,7 @@ import { GlobalLogo, DeveloperFooter } from "./Branding";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { LeaveConfirmModal } from "./LeaveConfirmModal";
 
 interface WaitingRoomProps {
   gameState: GameState;
@@ -24,22 +25,10 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   // Track which player names we've already sent a request to
   const [addedFriends, setAddedFriends] = useState<Set<string>>(new Set());
   const [addingFriend, setAddingFriend] = useState<string | null>(null);
-
-  // Safe leave — close any open modals first, then leave after a short delay
-  const handleLeave = useCallback(() => {
-    setIsLeaving(true);
-    setShowSettings(false);
-    setShowFriends(false);
-    setShowInvite(false);
-    // Give modals 150ms to unmount cleanly before triggering navigation
-    setTimeout(() => {
-      onLeave();
-    }, 150);
-  }, [onLeave]);
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(gameState.roomCode);
@@ -201,15 +190,13 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
         </div>
 
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={handleLeave}
-            disabled={isLeaving}
-            className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 disabled:opacity-60"
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 font-bold text-sm transition-all active:scale-[0.97]"
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            {isLeaving ? "Leaving..." : "Leave"}
-          </Button>
+            <LogOut className="h-4 w-4" />
+            Leave Room
+          </button>
           {isHost && (
             <Button
               onClick={onStart}
@@ -226,8 +213,18 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
       </div>
       <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
 
-      {/* Modals rendered at root level — outside the main scroll container so they
-          don't get torn down if the parent re-renders or leaves */}
+      {/* Modals rendered at root level */}
+      <LeaveConfirmModal
+        open={showLeaveConfirm}
+        title="Leave the Room?"
+        message="Are you sure you want to leave the waiting room? You will lose your spot."
+        confirmLabel="Yes, Leave Room"
+        onCancel={() => setShowLeaveConfirm(false)}
+        onConfirm={() => {
+          setShowLeaveConfirm(false);
+          onLeave();
+        }}
+      />
       <RoomSettingsModal
         open={showSettings}
         onClose={() => setShowSettings(false)}
