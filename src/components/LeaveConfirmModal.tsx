@@ -28,10 +28,8 @@ export function LeaveConfirmModal({
 
   const handleConfirm = () => {
     setLeaving(true);
-    // Give modals and Supabase channels 200ms to clean up before navigating
-    setTimeout(() => {
-      onConfirm();
-    }, 200);
+    // Execute immediately inside the React event loop. React 18 will batch state updates and unmounts synchronously.
+    onConfirm();
   };
 
   return (

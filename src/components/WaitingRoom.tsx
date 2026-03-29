@@ -236,7 +236,6 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
         confirmLabel="Yes, Leave Room"
         onCancel={() => setShowLeaveConfirm(false)}
         onConfirm={() => {
-          setShowLeaveConfirm(false);
           onLeave();
         }}
       />

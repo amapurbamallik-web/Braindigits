@@ -25,6 +25,7 @@ type FriendshipData = {
 };
 
 export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) {
+  if (!open) return null;
   return (
     <FriendsListModalContent open={open} onClose={onClose} roomCode={roomCode} />
   );

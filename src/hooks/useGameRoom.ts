@@ -351,6 +351,7 @@ export function useGameRoom() {
   const leaveRoom = useCallback(() => {
     cleanup();
     setError(null);
+    setGameState(null);
   }, [cleanup]);
 
   const kickPlayer = useCallback((targetPlayerId: string) => {

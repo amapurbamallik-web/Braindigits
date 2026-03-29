@@ -298,7 +298,7 @@ export function GameBoard({
           message="Are you sure you want to leave? You can play again or check scores before leaving."
           confirmLabel="Yes, Leave"
           onCancel={() => setShowLeaveConfirm(false)}
-          onConfirm={() => { setShowLeaveConfirm(false); onLeave(); }}
+          onConfirm={() => { onLeave(); }}
         />
       </div>
     );
@@ -481,7 +481,6 @@ export function GameBoard({
         confirmLabel="Yes, Abandon Match"
         onCancel={() => setShowLeaveConfirmEarly(false)}
         onConfirm={() => {
-          setShowLeaveConfirmEarly(false);
           if (onLeaveEarly) onLeaveEarly();
         }}
       />
