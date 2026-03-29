@@ -115,7 +115,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-between p-4 md:p-6 bg-game-dark relative overflow-y-auto overflow-x-hidden">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-between p-4 md:p-6 bg-game-dark relative">
       <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-game-amber/5 rounded-full blur-[120px] pointer-events-none" />
       
       {/* Top Navbar */}
@@ -263,62 +263,56 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             </Button>
           </div>
         </div>
-
-        {/* Existing Instructions Modal */}
-        {showInstructions && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md fade-in duration-200">
-            <div className="w-full max-w-md bg-[#0f0f18]/95 backdrop-blur-2xl rounded-2xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl font-bold text-foreground">How to Play</h2>
-                <button
-                  onClick={() => setShowInstructions(false)}
-                  className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground active:scale-95 transition-transform"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-cyan/15 text-game-cyan font-bold flex items-center justify-center text-xs">1</span>
-                  <p><strong className="text-foreground">Choose Mode</strong> — Play multiplayer with friends via a room code, or play offline against the AI Bot!</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-amber/15 text-game-amber font-bold flex items-center justify-center text-xs">2</span>
-                  <p><strong className="text-foreground">Guess the Number</strong> — A secret number within the chosen range is generated. Players take turns guessing.</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-purple/15 text-game-purple font-bold flex items-center justify-center text-xs">3</span>
-                  <p><strong className="text-foreground">Get Hints</strong> — After each guess you'll see "Higher" or "Lower". Use these hints to narrow down the target.</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-success/15 text-game-success font-bold flex items-center justify-center text-xs">4</span>
-                  <p><strong className="text-foreground">Win!</strong> — First player to guess correctly wins the round and earns a point. Play multiple rounds!</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowInstructions(false)}
-                className="w-full mt-6 h-11 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-semibold active:scale-[0.97] transition-transform"
-              >
-                Got it!
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* New Settings Modal */}
-        <RoomSettingsModal
-          open={showSettings}
-          onClose={() => setShowSettings(false)}
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-          readOnly={false}
-        />
-
       </div>
 
       <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-70 hover:opacity-100 transition-opacity animate-fade-in-up" />
 
-      {/* ALL MODALS MUST BE AT ROOT LEVEL TO AVOID Z-INDEX TRAPS */}
+
+      {/* ALL MODALS AT ROOT LEVEL — avoids overflow clipping from parent containers */}
+
+      {/* How to Play */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0f0f18]/95 backdrop-blur-2xl rounded-2xl p-6 shadow-2xl border border-white/10 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-white">How to Play</h2>
+              <button onClick={() => setShowInstructions(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 active:scale-95 transition-transform">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 text-sm text-neutral-400">
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-cyan/15 text-game-cyan font-bold flex items-center justify-center text-xs">1</span>
+                <p><strong className="text-white">Choose Mode</strong> — Play multiplayer with friends via a room code, or play offline against the AI Bot!</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-amber/15 text-game-amber font-bold flex items-center justify-center text-xs">2</span>
+                <p><strong className="text-white">Guess the Number</strong> — A secret number within the chosen range is generated. Players take turns guessing.</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-purple/15 text-game-purple font-bold flex items-center justify-center text-xs">3</span>
+                <p><strong className="text-white">Get Hints</strong> — After each guess you'll see "Higher" or "Lower". Use these to narrow down the target.</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-game-success/15 text-game-success font-bold flex items-center justify-center text-xs">4</span>
+                <p><strong className="text-white">Win!</strong> — First player to guess correctly wins the round and earns a point. Play multiple rounds!</p>
+              </div>
+            </div>
+            <Button onClick={() => setShowInstructions(false)} className="w-full mt-6 h-11 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-semibold active:scale-[0.97] transition-transform">
+              Got it!
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Settings */}
+      <RoomSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={settings}
+        onSettingsChange={onSettingsChange}
+        readOnly={false}
+      />
       <AuthModal 
         open={showAuth}
         onClose={() => setShowAuth(false)}
