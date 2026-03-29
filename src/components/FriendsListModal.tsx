@@ -37,7 +37,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
   // Track real-time online presence of all users
   const onlineIds = usePresence(user?.id);
 
-  const { data: friendships = [], isLoading: loading, error: fetchErrorRaw, refetch } = useQuery({
+  const { data: friendships = [], isLoading: loading, isFetching, error: fetchErrorRaw, refetch } = useQuery({
     queryKey: ["friendships", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -67,12 +67,19 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         isIncoming: r.user_id_2 === user.id && r.status === "pending"
       })).filter((f: any) => f.friend) as FriendshipData[];
     },
-    enabled: !!user?.id,        // Fire as soon as user is available, not just when modal opens
-    staleTime: 60000,           // Keep fresh for 1 minute
-    gcTime: 300000,             // Keep in cache for 5 minutes so modal opens instantly
+    enabled: !!user?.id,
+    staleTime: 60000,
+    gcTime: 300000,
     retry: 2,
-    retryDelay: 1000,           // Wait 1s between retries
+    retryDelay: 1000,
   });
+
+  // Always refetch when user opens the modal so data is never stale
+  useEffect(() => {
+    if (open && user?.id) {
+      refetch();
+    }
+  }, [open, user?.id]);
 
   const fetchError = fetchErrorRaw ? fetchErrorRaw.message : null;
 
@@ -323,7 +330,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-8 pr-2 relative z-10 custom-scrollbar">
-          {loading ? (
+          {(loading || isFetching) ? (
             <div className="flex flex-col justify-center items-center py-12 gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-game-cyan drop-shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
               <p className="text-[10px] font-bold uppercase tracking-widest text-game-cyan/60 animate-pulse">Syncing Network...</p>
