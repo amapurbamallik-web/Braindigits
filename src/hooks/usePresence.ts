@@ -15,6 +15,14 @@ export function usePresence(currentUserId: string | undefined): Set<string> {
   useEffect(() => {
     if (!currentUserId) return;
 
+    // Aggressively remove any lingering zombie channels with the same name BEFORE creating a new one.
+    // This prevents React from crashing if the component unmounts and remounts rapidly.
+    supabase.getChannels().forEach((c) => {
+      if (c.topic === "realtime:braindigits:online" || c.topic === "braindigits:online") {
+        supabase.removeChannel(c);
+      }
+    });
+
     // Create a shared presence channel for all users
     const channel = supabase.channel("braindigits:online", {
       config: { presence: { key: currentUserId } },
@@ -42,15 +50,8 @@ export function usePresence(currentUserId: string | undefined): Set<string> {
     });
 
     return () => {
-      try {
-        channel.untrack().then(() => {
-          supabase.removeChannel(channel);
-        }).catch(() => {
-          supabase.removeChannel(channel);
-        });
-      } catch (e) {
-        supabase.removeChannel(channel);
-      }
+      // Synchronous cleanup prevents race conditions
+      supabase.removeChannel(channel);
     };
   }, [currentUserId]);
 
