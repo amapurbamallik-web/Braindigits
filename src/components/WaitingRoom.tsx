@@ -1,7 +1,7 @@
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Users, Settings2, Share2, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { Copy, Check, Users, Settings2, Share2, UserPlus, LogOut } from "lucide-react";
+import { useState, useCallback } from "react";
 import { RoomSettingsModal } from "./RoomSettingsModal";
 import { FriendsListModal } from "./FriendsListModal";
 import { InviteModal } from "./InviteModal";
@@ -24,9 +24,22 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
   // Track which player names we've already sent a request to
   const [addedFriends, setAddedFriends] = useState<Set<string>>(new Set());
   const [addingFriend, setAddingFriend] = useState<string | null>(null);
+
+  // Safe leave — close any open modals first, then leave after a short delay
+  const handleLeave = useCallback(() => {
+    setIsLeaving(true);
+    setShowSettings(false);
+    setShowFriends(false);
+    setShowInvite(false);
+    // Give modals 150ms to unmount cleanly before triggering navigation
+    setTimeout(() => {
+      onLeave();
+    }, 150);
+  }, [onLeave]);
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(gameState.roomCode);
@@ -188,8 +201,14 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onLeave} className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50">
-            Leave
+          <Button
+            variant="outline"
+            onClick={handleLeave}
+            disabled={isLeaving}
+            className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 disabled:opacity-60"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            {isLeaving ? "Leaving..." : "Leave"}
           </Button>
           {isHost && (
             <Button
@@ -204,32 +223,34 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
         {!isHost && (
           <p className="text-sm text-muted-foreground mt-4">Waiting for host to start…</p>
         )}
-
-        <RoomSettingsModal
-          open={showSettings}
-          onClose={() => setShowSettings(false)}
-          settings={{
-            maxRange: gameState.maxRange,
-            timerEnabled: gameState.timerEnabled ?? false,
-            timerDuration: gameState.timerDuration ?? 15000,
-          }}
-          onSettingsChange={onUpdateSettings}
-          readOnly={!isHost}
-        />
-
-        <FriendsListModal
-          open={showFriends}
-          onClose={() => setShowFriends(false)}
-          roomCode={gameState.roomCode}
-        />
-
-        <InviteModal
-          open={showInvite}
-          onClose={() => setShowInvite(false)}
-          roomCode={gameState.roomCode}
-        />
       </div>
       <DeveloperFooter className="shrink-0 mt-8 mb-2 z-10 opacity-100" />
+
+      {/* Modals rendered at root level — outside the main scroll container so they
+          don't get torn down if the parent re-renders or leaves */}
+      <RoomSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={{
+          maxRange: gameState.maxRange,
+          timerEnabled: gameState.timerEnabled ?? false,
+          timerDuration: gameState.timerDuration ?? 15000,
+        }}
+        onSettingsChange={onUpdateSettings}
+        readOnly={!isHost}
+      />
+
+      <FriendsListModal
+        open={showFriends}
+        onClose={() => setShowFriends(false)}
+        roomCode={gameState.roomCode}
+      />
+
+      <InviteModal
+        open={showInvite}
+        onClose={() => setShowInvite(false)}
+        roomCode={gameState.roomCode}
+      />
     </div>
   );
 }

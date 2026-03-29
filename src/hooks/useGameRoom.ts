@@ -75,6 +75,15 @@ export function useGameRoom() {
             payload: { state: updated },
           });
         })
+        // Listen for being kicked by the host
+        .on("broadcast", { event: "kick_player" }, ({ payload }) => {
+          // Only react if YOU are the target
+          if (payload?.targetPlayerId && payload.targetPlayerId === playerId) {
+            cleanup();
+            setGameState(null);
+            setError("You were removed from the room by the host.");
+          }
+        })
         .subscribe();
 
       channelRef.current = channel;
@@ -308,6 +317,29 @@ export function useGameRoom() {
     setError(null);
   }, [cleanup]);
 
+  const kickPlayer = useCallback((targetPlayerId: string) => {
+    if (!gameState || !channelRef.current) return;
+    const amHost = gameState.players.find(p => p.id === playerId)?.isHost ?? false;
+    if (!amHost) return;
+    // Broadcast kick — the target player will auto-leave on receiving this
+    channelRef.current.send({
+      type: "broadcast",
+      event: "kick_player",
+      payload: { targetPlayerId },
+    });
+    // Remove from host's own state immediately
+    const updated = {
+      ...gameState,
+      players: gameState.players.filter(p => p.id !== targetPlayerId),
+    };
+    setGameState(updated);
+    channelRef.current.send({
+      type: "broadcast",
+      event: "game_update",
+      payload: { state: updated },
+    });
+  }, [gameState, playerId]);
+
   const leaveGameEarly = useCallback(() => {
     if (!gameState || !channelRef.current || gameState.status !== "playing") return;
 
@@ -423,6 +455,7 @@ export function useGameRoom() {
     restartGame,
     leaveRoom,
     leaveGameEarly,
+    kickPlayer,
     updateRoomSettings,
   };
 }

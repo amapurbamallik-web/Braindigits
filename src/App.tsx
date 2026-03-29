@@ -15,19 +15,19 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <AudioProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/:username" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-      <MusicPlayer />
-      </TooltipProvider>
+        <TooltipProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/:username" element={<Index />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <MusicPlayer />
+          </BrowserRouter>
+        </TooltipProvider>
       </AudioProvider>
     </AuthProvider>
   </QueryClientProvider>
