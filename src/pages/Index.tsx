@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ModeSelection } from "@/components/ModeSelection";
 import { GameLobby } from "@/components/GameLobby";
 import { WaitingRoom } from "@/components/WaitingRoom";
@@ -178,12 +179,27 @@ export default function Index() {
 
   const { user, profile } = useAuth();
   const { playSfx } = useAudio();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const modeRef = useRef(mode);
   
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  // Synchronize URL with logged-in username
+  useEffect(() => {
+    if (profile?.username) {
+      if (location.pathname === '/' || location.pathname === '') {
+        navigate(`/${profile.username}`, { replace: true });
+      }
+    } else if (user === null) {
+      if (location.pathname !== '/' && location.pathname !== '') {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [profile?.username, user, location.pathname, navigate]);
 
   useEffect(() => {
     if (!user) return;
