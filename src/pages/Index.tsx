@@ -51,22 +51,21 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
   const handleLeave = () => {
     if (isExiting) return;
     setIsExiting(true);
+    // Call both synchronously — React 18 batches them into one re-render
+    // so MultiplayerWrapper swaps to ModeSelection in a single frame
     leaveRoom();
-    // Wait for gameState=null re-render to settle before switching mode
-    setTimeout(() => {
-      onExit();
-    }, 250);
+    onExit();
   };
 
   const handleLeaveEarly = () => {
     if (isExiting) return;
     setIsExiting(true);
     leaveGameEarly();
-    // Wait for broadcast + cleanup to finish before switching mode
-    setTimeout(() => {
-      onExit();
-    }, 250);
+    onExit();
   };
+
+  // While transitioning out, render nothing — prevents the GameLobby flash
+  if (isExiting) return null;
 
   if (!gameState) {
     return (
@@ -120,15 +119,23 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
 
   useGameSounds(gameState, playerId);
 
+  const [isExiting, setIsExiting] = useState(false);
+
   const handleLeave = () => {
+    if (isExiting) return;
+    setIsExiting(true);
     leaveRoom();
     onExit();
   };
 
   const handleLeaveEarly = () => {
+    if (isExiting) return;
+    setIsExiting(true);
     leaveGameEarly();
     onExit();
   };
+
+  if (isExiting) return null;
 
   if (!isStarted) {
     return (
