@@ -177,7 +177,7 @@ export default function Index() {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [pendingInvite, setPendingInvite] = useState<{roomCode: string, senderName: string} | null>(null);
 
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const { playSfx } = useAudio();
   const navigate = useNavigate();
   const location = useLocation();
@@ -190,6 +190,8 @@ export default function Index() {
 
   // Synchronize URL with logged-in username
   useEffect(() => {
+    if (isLoading) return; // Wait for Supabase to finish checking session against localStorage
+    
     if (profile?.username) {
       if (location.pathname === '/' || location.pathname === '') {
         navigate(`/${profile.username}`, { replace: true });
@@ -199,7 +201,7 @@ export default function Index() {
         navigate('/', { replace: true });
       }
     }
-  }, [profile?.username, user, location.pathname, navigate]);
+  }, [profile?.username, user, isLoading, location.pathname, navigate]);
 
   useEffect(() => {
     if (!user) return;
