@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAudio } from "@/contexts/AudioContext";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { usePresence } from "@/hooks/usePresence";
+import { Avatar } from "./Avatar";
 
 interface FriendsListProps {
   open: boolean;
@@ -18,7 +19,7 @@ interface FriendsListProps {
 type FriendshipData = {
   id: string;
   status: "pending" | "accepted";
-  friend: { id: string, username: string, total_wins?: number, total_games?: number, ai_wins?: number };
+  friend: { id: string, username: string, total_wins?: number, total_games?: number, ai_wins?: number, avatar_url?: string };
   isIncoming: boolean;
 };
 
@@ -53,7 +54,7 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
       
       const { data: profiles, error: profError } = await (supabase as any)
         .from("profiles")
-        .select("id, username, total_wins, total_games, ai_wins")
+        .select("id, username, total_wins, total_games, ai_wins, avatar_url")
         .in("id", friendIds);
 
       if (profError) throw new Error("Failed to load generic profiles");
@@ -356,9 +357,18 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                   <div className="space-y-2">
                     {incomingReqs.map(req => (
                       <div key={req.id} className="flex items-center justify-between bg-gradient-to-r from-game-amber/10 to-transparent p-3 sm:p-4 rounded-2xl border border-game-amber/20 group">
-                        <div className="flex flex-col min-w-0 flex-1 mr-3">
-                           <span className="text-white text-sm font-bold truncate">{req.friend.username}</span>
-                           <span className="text-[10px] text-game-amber/80 font-medium">wants to connect</span>
+                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                          <Avatar
+                            src={req.friend.avatar_url}
+                            initials={req.friend.username.substring(0, 2)}
+                            size="w-9 h-9"
+                            emojiSize="text-xl"
+                            className="rounded-xl border border-game-amber/20 shrink-0"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-white text-sm font-bold truncate">{req.friend.username}</span>
+                            <span className="text-[10px] text-game-amber/80 font-medium">wants to connect</span>
+                          </div>
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <button onClick={() => respondToRequest(req.id, "accept")} className="p-2 sm:p-2.5 bg-game-success/20 text-game-success rounded-xl border border-game-success/30 hover:bg-game-success hover:text-white active:scale-95 transition-all shadow-[0_0_15px_rgba(34,197,94,0)] hover:shadow-[0_0_15px_rgba(34,197,94,0.4)]">
@@ -401,11 +411,13 @@ export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) 
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
                             <div className="relative shrink-0">
-                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-game-cyan/20 to-game-purple/20 border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                <span className="text-xs font-black text-white/90 drop-shadow-md">
-                                  {friend.friend.username.substring(0,2).toUpperCase()}
-                                </span>
-                              </div>
+                              <Avatar
+                                src={friend.friend.avatar_url}
+                                initials={friend.friend.username.substring(0, 2)}
+                                size="w-10 h-10"
+                                emojiSize="text-xl"
+                                className="rounded-xl border border-white/10 bg-gradient-to-br from-game-cyan/10 to-game-purple/10 group-hover:scale-110 transition-transform duration-300"
+                              />
                               <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0a0a0f] transition-all duration-500 ${onlineIds.has(friend.friend.id) ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)]' : 'bg-white/20'}`} />
                             </div>
                             <div className="min-w-0 flex-1">

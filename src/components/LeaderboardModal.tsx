@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { UserProfile, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Avatar } from "./Avatar";
 
 interface LeaderboardModalProps {
   open: boolean;
@@ -75,7 +76,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
       
       const { data, error: fetchError } = await (supabase as any)
         .from("profiles")
-        .select("id, username, total_wins, ai_wins, total_games")
+        .select("id, username, total_wins, ai_wins, total_games, avatar_url")
         .gt(orderColumn, 0)
         .order(orderColumn, { ascending: false })
         .limit(50);
@@ -159,18 +160,27 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                 className="flex items-center justify-between p-3 rounded-2xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors group"
                 style={{ animation: `fade-in-up 0.3s ease-out ${idx * 0.05}s both` }}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  {/* Rank badge */}
                   <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                    ${idx === 0 ? "bg-amber-400 text-amber-900 shadow-[0_0_15px_rgba(251,191,36,0.5)]" : 
-                      idx === 1 ? "bg-slate-300 text-slate-800" : 
-                      idx === 2 ? "bg-amber-700 text-amber-100" : 
+                    w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0
+                    ${idx === 0 ? "bg-amber-400 text-amber-900 shadow-[0_0_15px_rgba(251,191,36,0.5)]" :
+                      idx === 1 ? "bg-slate-300 text-slate-800" :
+                      idx === 2 ? "bg-amber-700 text-amber-100" :
                       "bg-white/10 text-muted-foreground"}
                   `}>
                     {idx + 1}
                   </div>
+                  {/* Avatar */}
+                  <Avatar
+                    src={(player as any).avatar_url}
+                    initials={player.username?.substring(0, 2) || "?"}
+                    size="w-9 h-9"
+                    emojiSize="text-xl"
+                    className="border border-white/10"
+                  />
                   <div>
-                    <p className="text-white font-semibold group-hover:text-game-cyan transition-colors">{player.username}</p>
+                    <p className="text-white font-semibold group-hover:text-game-cyan transition-colors leading-tight">{player.username}</p>
                     <p className="text-xs text-muted-foreground">{player.total_games} Matches</p>
                   </div>
                 </div>
