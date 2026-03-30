@@ -7,7 +7,11 @@ const AI_NAMES = ["HAL 9000", "GLaDOS", "DeepBlue", "AlphaGo", "ChatGPT", "Skyne
 const getAiName = () => AI_NAMES[Math.floor(Math.random() * AI_NAMES.length)];
 const TURN_DURATION_MS = 15000;
 
-export function useAIGame(playerName: string, settings: import("@/lib/game-types").GameSettings) {
+export function useAIGame(
+  playerName: string, 
+  settings: import("@/lib/game-types").GameSettings,
+  onSettingsChange?: (s: import("@/lib/game-types").GameSettings) => void
+) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [playerId] = useState(() => generatePlayerId());
   
@@ -59,6 +63,7 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       maxHearts,
       guessLimitEnabled: settings.guessLimitEnabled,
       guessLimitDifficulty: settings.guessLimitDifficulty || 'easy',
+      autoIncreaseRange: settings.autoIncreaseRange,
       maxGuesses: Math.ceil(Math.log2(settings.maxRange) * (settings.guessLimitDifficulty === 'hard' ? 1 : settings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
     };
     
@@ -255,7 +260,6 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
     setGameState((prevState) => {
       if (!prevState) return prevState;
       const maxHearts = prevState.maxHearts ?? 3;
-      aiStateRef.current = { min: 1, max: 100 };
       
       const currentMax = prevState.maxRange;
       const newMax = prevState.autoIncreaseRange ? currentMax * 2 : currentMax;
@@ -279,17 +283,38 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         round: prevState.round + 1,
         guessLimitEnabled: settings.guessLimitEnabled,
         guessLimitDifficulty: settings.guessLimitDifficulty || 'easy',
-        maxGuesses: Math.ceil(Math.log2(settings.maxRange) * (settings.guessLimitDifficulty === 'hard' ? 1 : settings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
+        maxGuesses: Math.ceil(Math.log2(newMax) * (settings.guessLimitDifficulty === 'hard' ? 1 : settings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
         turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
       };
     });
-  }, []);
+  }, [settings, onSettingsChange]);
+
+  // Sync the new range back to global settings whenever it increases in the gameState
+  // This ensures that the increased range is remembered even if the user exits and returns later.
+  useEffect(() => {
+    if (gameState?.status === 'playing' && gameState.autoIncreaseRange && gameState.maxRange > settings.maxRange) {
+      if (onSettingsChange) {
+        onSettingsChange({
+          ...settings,
+          maxRange: gameState.maxRange
+        });
+      }
+    }
+  }, [gameState?.maxRange, gameState?.status, gameState?.autoIncreaseRange, settings, onSettingsChange]);
+
+  // Ensure AI state is synchronized with current game boundaries
+  useEffect(() => {
+    if (gameState?.status === 'playing') {
+      aiStateRef.current = { min: 1, max: gameState.maxRange };
+    }
+  }, [gameState?.round, gameState?.maxRange, gameState?.status]);
 
   const leaveRoom = useCallback(() => {
-    // nothing needed
+    setGameState(null);
   }, []);
 
   const updateRoomSettings = useCallback((newSettings: import("@/lib/game-types").GameSettings) => {
+    if (onSettingsChange) onSettingsChange(newSettings);
     setGameState(prev => {
       if (!prev) return prev;
       return {
@@ -298,11 +323,12 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         timerEnabled: newSettings.timerEnabled,
         timerDuration: newSettings.timerDuration,
         maxHearts: newSettings.maxHearts ?? 3,
+        autoIncreaseRange: newSettings.autoIncreaseRange,
         guessLimitEnabled: newSettings.guessLimitEnabled,
         guessLimitDifficulty: newSettings.guessLimitDifficulty || 'easy',
       };
     });
-  }, []);
+  }, [onSettingsChange]);
 
   const currentPlayer = gameState?.players.find((p) => p.id === playerId);
   const isMyTurn =

@@ -42,6 +42,8 @@ interface GameBoardProps {
   onLeave: () => void;
   onLeaveEarly?: () => void;
   onUpdateSettings: (s: import("@/lib/game-types").GameSettings) => void;
+  onRequestRestart?: () => void;
+  restartRequests?: Record<string, boolean>;
   isHost: boolean;
   mode?: GameMode;
 }
@@ -119,6 +121,8 @@ export function GameBoard({
   onLeave,
   onLeaveEarly,
   onUpdateSettings,
+  onRequestRestart,
+  restartRequests = {},
   isHost,
   mode = 'friends'
 }: GameBoardProps & { mode?: GameMode }) {
@@ -127,6 +131,7 @@ export function GameBoard({
   const [inputError, setInputError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [requestRestartSent, setRequestRestartSent] = useState(false);
   const [showLeaveConfirmEarly, setShowLeaveConfirmEarly] = useState(false);
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
@@ -134,6 +139,12 @@ export function GameBoard({
   const winner = gameState.winnerId
     ? gameState.players.find((p) => p.id === gameState.winnerId)
     : null;
+
+  useEffect(() => {
+    if (gameState.status === 'playing') {
+      setRequestRestartSent(false);
+    }
+  }, [gameState.status]);
 
   useEffect(() => {
     let isActive = true;
@@ -213,7 +224,9 @@ export function GameBoard({
         <div className="w-full max-w-md text-center shrink-0 opacity-0 animate-fade-in-up relative z-10 my-auto py-6" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6 text-center">
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${theme.bgMuted} mb-4 animate-bounce-subtle border ${theme.border} ${theme.glow}`}>
-              {wonByDisconnect ? (
+              {isMe ? (
+                <Trophy className={`h-10 w-10 ${theme.text}`} />
+              ) : wonByDisconnect ? (
                 <span className="text-4xl">🔌</span>
               ) : wonByElimination ? (
                 <span className="text-4xl">💀</span>
@@ -290,7 +303,21 @@ export function GameBoard({
             )}
           </div>
           {!isHost && (
-            <p className="text-sm text-muted-foreground mt-4 animate-pulse">Waiting for host to restart…</p>
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <Button
+                onClick={() => {
+                  onRequestRestart?.();
+                  setRequestRestartSent(true);
+                }}
+                disabled={requestRestartSent}
+                variant="outline"
+                className={`w-full h-14 font-black active:scale-[0.97] transition-all border-game-cyan/30 text-game-cyan hover:bg-game-cyan/10 ${requestRestartSent ? 'opacity-70' : 'animate-pulse shadow-[0_0_15px_rgba(34,211,238,0.15)]'}`}
+              >
+                <RotateCcw className={`h-5 w-5 mr-2 ${requestRestartSent ? '' : 'animate-spin-slow'}`} />
+                {requestRestartSent ? "Request Sent" : "Request Restart"}
+              </Button>
+              <p className="text-xs text-muted-foreground/60">Waiting for host to restart…</p>
+            </div>
           )}
         </div>
         
@@ -309,7 +336,10 @@ export function GameBoard({
             maxRange: gameState.maxRange,
             timerEnabled: gameState.timerEnabled ?? true,
             timerDuration: gameState.timerDuration ?? 15000,
-            maxHearts: gameState.maxHearts ?? 3
+            maxHearts: gameState.maxHearts ?? 3,
+            autoIncreaseRange: gameState.autoIncreaseRange,
+            guessLimitEnabled: gameState.guessLimitEnabled,
+            guessLimitDifficulty: gameState.guessLimitDifficulty,
           }}
           onSettingsChange={onUpdateSettings}
         />
@@ -329,7 +359,7 @@ export function GameBoard({
               onClick={() => setShowSettings(true)}
               variant="outline"
               size="icon"
-              className={`rounded-full w-10 h-10 md:w-11 md:h-11 bg-card/50 backdrop-blur-md border ${theme.border} ${theme.text} hover:${theme.primary} hover:${theme.textDark} transition-all active:scale-95`}
+              className={`rounded-full w-10 h-10 md:w-11 md:h-11 bg-card/50 backdrop-blur-md border ${theme.border} ${theme.text} hover:${theme.primary} hover:${theme.textDark} transition-all active:scale-95 shadow-lg active:shadow-none`}
               title="Match Settings"
             >
               <Settings2 className="h-5 w-5" />
@@ -376,11 +406,22 @@ export function GameBoard({
             {gameState.players.map((player) => {
               const playerHearts = player.hearts ?? maxHearts;
               return (
-                <div key={player.id} className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition-all ${
+                <div key={player.id} className={`relative flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition-all ${
                     player.id === currentTurnPlayer?.id && !player.isEliminated ? `ring-2 ${theme.ring} shadow-[0_0_15px_currentColor] bg-card/60` :
                     player.id === playerId ? `${theme.bgMuted} ring-1 ${theme.ring}` : player.isEliminated ? "bg-black/30 opacity-50 grayscale" : "bg-muted/40"
                   }`}
                 >
+                  {/* Restart Request Chat Bubble */}
+                  {restartRequests[player.id] && (
+                    <div className="absolute -top-11 left-8 z-[100] animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-none">
+                      <div className="relative bg-white text-game-dark px-3 py-1.5 rounded-2xl rounded-bl-sm text-[10px] font-black uppercase tracking-wider shadow-[0_4px_15px_rgba(255,255,255,0.3)] flex items-center gap-1.5 whitespace-nowrap border border-white/50 animate-float">
+                        <RotateCcw className="w-3 h-3 animate-spin-slow" />
+                        Play again!
+                        {/* Triangle pointer */}
+                        <div className="absolute bottom-[-6px] left-[2px] w-0 h-0 border-l-[6px] border-l-transparent border-t-[8px] border-t-white border-r-[6px] border-r-transparent" />
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
                       className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse"}`} 
@@ -483,7 +524,10 @@ export function GameBoard({
           maxRange: gameState.maxRange,
           timerEnabled: gameState.timerEnabled ?? true,
           timerDuration: gameState.timerDuration ?? 15000,
-          maxHearts: gameState.maxHearts ?? 3
+          maxHearts: gameState.maxHearts ?? 3,
+          autoIncreaseRange: gameState.autoIncreaseRange,
+          guessLimitEnabled: gameState.guessLimitEnabled,
+          guessLimitDifficulty: gameState.guessLimitDifficulty,
         }}
         onSettingsChange={onUpdateSettings}
       />

@@ -7,8 +7,9 @@ import {
   generateTargetNumber,
   generatePlayerId,
 } from "@/lib/game-types";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const TURN_DURATION_MS = 15000;
 
@@ -25,6 +26,7 @@ function getNextTurnIndex(currentIndex: number, players: Player[]): number {
 export function useGameRoom() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [playerId] = useState(() => generatePlayerId());
+  const [restartRequests, setRestartRequests] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
@@ -172,6 +174,59 @@ export function useGameRoom() {
               event: "game_update",
               payload: { state: updated },
             });
+          } else if (current.status === "finished") {
+            const updatedPlayers = current.players.map(p => {
+              if (p.id === key) return { ...p, isOnline: false };
+              if (p.id === responsiblePlayerId) return { ...p, isHost: true };
+              return p;
+            });
+            
+            const onlineOtherPlayers = updatedPlayers.filter(p => p.id !== playerId && p.isOnline !== false);
+            
+            if (onlineOtherPlayers.length === 0) {
+              // I am the last one left in a finished room!
+              toast.info("All friends have left. Returning to lobby...");
+              setTimeout(() => {
+                 cleanup();
+                 setGameState(null);
+              }, 2000);
+              return;
+            }
+
+            const updated: GameState = {
+              ...current,
+              players: updatedPlayers,
+            };
+
+            setGameState(updated);
+            safeSend(channel, {
+              type: "broadcast",
+              event: "game_update",
+              payload: { state: updated },
+            });
+          }
+        })
+        .on("broadcast", { event: "request_restart" }, ({ payload }) => {
+          const current = gameStateRef.current;
+          const amHost = current?.players.find(p => p.id === playerId)?.isHost;
+          
+          if (payload?.playerId) {
+            setRestartRequests(prev => ({ ...prev, [payload.playerId]: true }));
+            // Auto-clear after 10 seconds
+            setTimeout(() => {
+              setRestartRequests(prev => {
+                const updated = { ...prev };
+                delete updated[payload.playerId];
+                return updated;
+              });
+            }, 10000);
+          }
+
+          if (amHost && payload?.playerName) {
+            toast.info(`${payload.playerName} requested to play again!`, {
+              icon: "🔄",
+              duration: 5000,
+            });
           }
         })
         .subscribe(async (status) => {
@@ -228,6 +283,9 @@ export function useGameRoom() {
         timerEnabled: settings.timerEnabled,
         timerDuration: settings.timerDuration,
         maxHearts,
+        autoIncreaseRange: settings.autoIncreaseRange,
+        guessLimitEnabled: settings.guessLimitEnabled,
+        guessLimitDifficulty: settings.guessLimitDifficulty,
       };
       setGameState(state);
       const channel = subscribeToChannel(roomCode, true);
@@ -290,6 +348,7 @@ export function useGameRoom() {
       winnerId: null,
       guessLimitEnabled: gameState.guessLimitEnabled,
       guessLimitDifficulty: gameState.guessLimitDifficulty,
+      autoIncreaseRange: gameState.autoIncreaseRange,
       maxGuesses: Math.ceil(Math.log2(gameState.maxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
@@ -449,6 +508,7 @@ export function useGameRoom() {
 
   const restartGame = useCallback(() => {
     if (!gameState || !channelRef.current) return;
+    setRestartRequests({}); // Clear all requests on restart
     const maxHearts = gameState.maxHearts ?? 3;
     const currentMaxRange = gameState.maxRange;
     const newMaxRange = gameState.autoIncreaseRange ? currentMaxRange * 2 : currentMaxRange;
@@ -472,6 +532,10 @@ export function useGameRoom() {
       })),
       winnerId: null,
       round: gameState.round + 1,
+      autoIncreaseRange: gameState.autoIncreaseRange,
+      guessLimitEnabled: gameState.guessLimitEnabled,
+      guessLimitDifficulty: gameState.guessLimitDifficulty,
+      maxGuesses: Math.ceil(Math.log2(newMaxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
@@ -671,6 +735,27 @@ export function useGameRoom() {
       }
     }
   }, [gameState?.status, gameState?.winnerId, playerId, user, profile, refreshProfile]);
+ 
+  // Handle auto-exit when alone in a finished room
+  useEffect(() => {
+    if (gameState?.status !== "finished") return;
+    
+    const onlineOthers = gameState.players.filter(p => p.id !== playerId && p.isOnline !== false);
+    if (onlineOthers.length === 0) {
+      const timer = setTimeout(() => {
+        // Double check they are still alone before exiting
+        if (gameStateRef.current?.status === "finished") {
+          const stillAlone = gameStateRef.current.players.filter(p => p.id !== playerId && p.isOnline !== false).length === 0;
+          if (stillAlone) {
+            toast.info("Room closed as everyone has left. Returning home...");
+            leaveRoom();
+          }
+        }
+      }, 5000); // 5 seconds of glory before home
+      return () => clearTimeout(timer);
+    }
+  }, [gameState?.status, gameState?.players, playerId, leaveRoom]);
+
 
   const updateRoomSettings = useCallback(
     (newSettings: import("@/lib/game-types").GameSettings) => {
@@ -681,6 +766,10 @@ export function useGameRoom() {
         timerEnabled: newSettings.timerEnabled,
         timerDuration: newSettings.timerDuration,
         maxHearts: newSettings.maxHearts ?? 3,
+        autoIncreaseRange: newSettings.autoIncreaseRange,
+        guessLimitEnabled: newSettings.guessLimitEnabled,
+        guessLimitDifficulty: newSettings.guessLimitDifficulty,
+        maxGuesses: Math.ceil(Math.log2(newSettings.maxRange) * (newSettings.guessLimitDifficulty === 'hard' ? 1 : newSettings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
       };
       setGameState(updated);
       safeSend(channelRef.current, {
@@ -691,6 +780,17 @@ export function useGameRoom() {
     },
     [gameState]
   );
+
+  const requestRestart = useCallback(() => {
+    if (!channelRef.current || !currentPlayer) return;
+    safeSend(channelRef.current, {
+      type: "broadcast",
+      event: "request_restart",
+      payload: { playerName: currentPlayer.name, playerId: playerId },
+    });
+    setRestartRequests(prev => ({ ...prev, [playerId]: true }));
+    toast.success("Restart request sent to host!");
+  }, [currentPlayer, safeSend]);
 
 
   return {
@@ -709,5 +809,7 @@ export function useGameRoom() {
     leaveGameEarly,
     kickPlayer,
     updateRoomSettings,
+    requestRestart,
+    restartRequests,
   };
 }

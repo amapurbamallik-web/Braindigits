@@ -48,6 +48,8 @@ function MultiplayerWrapper({
     leaveGameEarly,
     updateRoomSettings,
     kickPlayer,
+    requestRestart,
+    restartRequests,
   } = useGameRoom();
 
   const handleCreateRoom = (name: string) => {
@@ -104,6 +106,8 @@ function MultiplayerWrapper({
       onLeave={handleLeave}
       onLeaveEarly={handleLeaveEarly}
       onUpdateSettings={updateRoomSettings}
+      onRequestRestart={requestRestart}
+      restartRequests={restartRequests}
       isHost={isHost}
       mode="friends"
     />
@@ -134,7 +138,7 @@ function AIWrapper({
     leaveRoom,
     leaveGameEarly,
     updateRoomSettings,
-  } = useAIGame(isStarted ? playerName || "Player" : "", settings);
+  } = useAIGame(isStarted ? playerName || "Player" : "", settings, onSettingsChange);
 
   useGameSounds(gameState, playerId);
 

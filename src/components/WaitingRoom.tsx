@@ -258,6 +258,9 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
           timerEnabled: gameState.timerEnabled ?? false,
           timerDuration: gameState.timerDuration ?? 15000,
           maxHearts: gameState.maxHearts ?? 3,
+          autoIncreaseRange: gameState.autoIncreaseRange,
+          guessLimitEnabled: gameState.guessLimitEnabled,
+          guessLimitDifficulty: gameState.guessLimitDifficulty,
         }}
         onSettingsChange={onUpdateSettings}
         readOnly={!isHost}
