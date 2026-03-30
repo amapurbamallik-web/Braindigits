@@ -462,7 +462,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                             <div className="min-w-0 flex-1">
                               <span className="text-white text-base font-bold truncate block group-hover:text-game-cyan transition-colors">{friend.friend?.username || "Unknown Player"}</span>
                               <div className="flex items-center gap-1.5 opacity-40">
-                                <span className="text-[10px] font-black uppercase tracking-widest shrink-0">{onlineIds?.has?.(friend.friend?.id) ? "Online" : "Terminated"}</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest shrink-0">{onlineIds?.has?.(friend.friend?.id) ? "Online" : "Offline"}</span>
                               </div>
                             </div>
                           </div>
