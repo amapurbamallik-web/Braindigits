@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUp, ArrowDown, LogOut, Skull, Trophy, Star } from "lucide-react";
+import { ArrowUp, ArrowDown, LogOut, Skull, Trophy, Star, ArrowLeft } from "lucide-react";
 import React from "react";
 import { useAudio } from "@/contexts/AudioContext";
 import confetti from "canvas-confetti";
@@ -178,6 +178,9 @@ export function ArcadeBoard({
   if (gameState.status === "finished") {
     const myFinalScore = myPlayer?.score || 0;
     const teamEfficiency = getArcadeEfficiencyScore(currentLevel, gameState.players.reduce((sum, p) => sum + p.attempts, 0), gameState.optimalGuesses || 7);
+    const isMultiplayer = gameState.roomCode !== "LOCAL";
+    const connectedCount = gameState.players.filter(p => p.isOnline !== false).length;
+    const disabledButton = isMultiplayer && connectedCount < 2;
     
     return (
       <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
@@ -223,12 +226,17 @@ export function ArcadeBoard({
           <div className="flex gap-3">
             <button
               onClick={() => { playSfx('click'); setShowLeaveConfirm(true); }}
-              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 font-bold transition-all active:scale-[0.97]"
+              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] font-bold transition-all active:scale-[0.97]"
             >
-              <LogOut className="h-4 w-4" />
-              Main Menu
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </button>
-            <Button onClick={() => { playSfx('click'); onRestart(); }} className="flex-1 h-14 font-black active:scale-[0.97] transition-all bg-game-purple hover:bg-game-purple/90 text-white shadow-[0_0_20px_rgba(171,71,188,0.3)]">
+            <Button 
+               onClick={() => { playSfx('click'); onRestart(); }} 
+               disabled={disabledButton}
+               title={disabledButton ? "Not enough players to restart" : ""}
+               className="flex-1 h-14 font-black active:scale-[0.97] transition-all bg-game-purple hover:bg-game-purple/90 text-white shadow-[0_0_20px_rgba(171,71,188,0.3)] disabled:opacity-50 disabled:grayscale"
+            >
               <Trophy className="h-5 w-5 mr-2" />
               Play Again
             </Button>
@@ -251,6 +259,9 @@ export function ArcadeBoard({
 
   if (gameState.status === "level_complete") {
     const nextLevelNum = (gameState.level || 1) + 1;
+    const isMultiplayer = gameState.roomCode !== "LOCAL";
+    const connectedCount = gameState.players.filter(p => p.isOnline !== false).length;
+    const disabledButton = isMultiplayer && connectedCount < 2;
     return (
       <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
         <div className="absolute top-[10%] right-[-10%] w-96 h-96 bg-green-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
@@ -294,7 +305,9 @@ export function ArcadeBoard({
 
           <Button 
             onClick={() => { playSfx('click'); onNextLevel?.(); }} 
-            className="w-full h-16 text-lg font-black active:scale-[0.97] transition-all bg-green-500 hover:bg-green-400 text-game-dark shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-pulse-glow"
+            disabled={disabledButton}
+            title={disabledButton ? "Not enough players to continue" : ""}
+            className="w-full h-16 text-lg font-black active:scale-[0.97] transition-all bg-green-500 hover:bg-green-400 text-game-dark shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-pulse-glow disabled:opacity-50 disabled:grayscale disabled:animate-none"
           >
             START NEXT LEVEL
           </Button>
@@ -346,8 +359,35 @@ export function ArcadeBoard({
           
           {myPlayer && (
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-              <span className="text-xs text-muted-foreground font-bold uppercase">Optimal Guesses: <span className="text-white font-mono">{gameState.optimalGuesses}</span></span>
-              <span className="flex items-center gap-2 text-xs font-bold uppercase">Attempts: <span className={`font-mono ${theme.text} text-sm`}>{myPlayer.attempts}</span></span>
+                <div className="flex flex-col items-start w-full">
+                  <div className="flex justify-between w-full items-end mb-1">
+                    <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em]">Neural Capacity</span>
+                    <span className={`font-mono font-black text-xs ${((gameState.optimalGuesses || 14) - (myPlayer?.attempts || 0)) <= 3 ? 'text-red-500 animate-pulse' : theme.text}`}>
+                      {Math.max(0, (gameState.optimalGuesses || 14) - (myPlayer?.attempts || 0))} GUESSES LEFT
+                    </span>
+                  </div>
+                  <div className="flex gap-0.5 w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[1px]">
+                    {Array.from({ length: 20 }).map((_, i) => {
+                      const total = gameState.optimalGuesses || 14;
+                      const used = myPlayer?.attempts || 0;
+                      const segmentValue = total / 20;
+                      const threshold = (i + 1) * segmentValue;
+                      const isActive = used < threshold;
+                      const isCritical = (total - used) <= 3;
+
+                      return (
+                        <div 
+                          key={i} 
+                          className={`h-full flex-1 transition-all duration-500 rounded-[1px] ${
+                            isActive 
+                              ? isCritical ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : theme.primary 
+                              : 'bg-transparent opacity-10'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
             </div>
           )}
         </div>
@@ -360,13 +400,18 @@ export function ArcadeBoard({
               const playerHearts = player.hearts ?? maxHearts;
               return (
                 <div key={player.id} className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
+                    player.id === currentTurnPlayer?.id && !player.isEliminated ? `ring-2 ${theme.ring} shadow-[0_0_15px_currentColor] bg-card/60` : 
                     player.id === playerId ? "bg-white/5 ring-1 ring-white/10" : player.isEliminated ? "bg-black/30 opacity-50 grayscale" : "bg-muted/40"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0 mr-2 flex-1">
                     <span className="font-medium truncate text-white">
                       {player.name} {player.id === playerId && "(You)"}
                     </span>
+                    <div 
+                      className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse"}`} 
+                      title={player.isOnline !== false ? "Online" : "Offline / Disconnected"}
+                    />
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {!player.isEliminated ? <HeartsDisplay hearts={playerHearts} maxHearts={maxHearts} size="sm" /> : <span>💀</span>}

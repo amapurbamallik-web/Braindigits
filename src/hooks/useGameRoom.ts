@@ -53,7 +53,10 @@ export function useGameRoom() {
     (roomCode: string, isHost: boolean) => {
       cleanup();
       const channel = supabase.channel(`game-${roomCode}`, {
-        config: { broadcast: { self: true } },
+        config: { 
+          broadcast: { self: true },
+          presence: { key: playerId },
+        },
       });
 
       channel
@@ -88,12 +91,103 @@ export function useGameRoom() {
             setError("You were removed from the room by the host.");
           }
         })
-        .subscribe();
+        .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+          const current = gameStateRef.current;
+          if (!current || !key) return; // 'key' is the playerId of the disconnected player
+
+          const disconnectedPlayer = current.players.find(p => p.id === key);
+          if (!disconnectedPlayer) return;
+
+          // Determine who is responsible for handling this disconnect event and broadcasting the new state.
+          // By default, the current host is responsible.
+          let responsiblePlayerId = current.players.find(p => p.isHost && !p.isEliminated && p.id !== key)?.id;
+
+          // If the host just disconnected (or no host found), the next earliest connected active player becomes responsible.
+          if (!responsiblePlayerId) {
+             const remainingPlayers = current.players.filter(p => p.id !== key && !p.isEliminated);
+             if (remainingPlayers.length > 0) {
+               responsiblePlayerId = remainingPlayers[0].id;
+             }
+          }
+
+          // If I am NOT the responsible player, I don't broadcast the update. I just wait for the update from them.
+          if (playerId !== responsiblePlayerId) return;
+
+          // Now we are the responsible player. We must eliminate 'key' and broadcast the update.
+          // If the disconnected player was the host (or we were chosen as backup), we also promote ourselves to host.
+          
+          if (current.status === "waiting") {
+            const updated = {
+              ...current,
+              players: current.players.filter(p => p.id !== key).map(p => 
+                p.id === responsiblePlayerId ? { ...p, isHost: true } : p
+              ),
+            };
+            setGameState(updated);
+            safeSend(channel, {
+              type: "broadcast",
+              event: "game_update",
+              payload: { state: updated },
+            });
+          } else if (current.status === "playing") {
+            const updatedPlayers = current.players.map(p => {
+              if (p.id === key) return { ...p, isEliminated: true, isHost: false, isOnline: false };
+              if (p.id === responsiblePlayerId) return { ...p, isHost: true };
+              return p;
+            });
+
+            const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
+            
+            let status: GameState["status"] = current.status;
+            let winnerId = current.winnerId;
+            let nextTurnIndex = current.currentTurnIndex;
+
+            if (activePlayers.length <= 1 && current.players.length > 1) {
+              status = "finished";
+              winnerId = activePlayers.length === 1 ? activePlayers[0].id : null;
+              if (winnerId) {
+                const winnerIndex = updatedPlayers.findIndex(p => p.id === winnerId);
+                if (winnerIndex >= 0) {
+                  updatedPlayers[winnerIndex].score += 1;
+                }
+              }
+            } else if (current.players[current.currentTurnIndex]?.id === key) {
+              nextTurnIndex = getNextTurnIndex(current.currentTurnIndex, updatedPlayers);
+            }
+
+            const updated: GameState = {
+              ...current,
+              players: updatedPlayers,
+              status,
+              winnerId,
+              currentTurnIndex: nextTurnIndex,
+              turnDeadline: (status === "playing" && nextTurnIndex !== current.currentTurnIndex && current.timerEnabled) 
+                ? Date.now() + (current.timerDuration ?? 15000) 
+                : current.turnDeadline,
+            };
+
+            setGameState(updated);
+            safeSend(channel, {
+              type: "broadcast",
+              event: "game_update",
+              payload: { state: updated },
+            });
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            try {
+              await channel.track({ online_at: new Date().toISOString() });
+            } catch (err) {
+              console.warn("Failed to track presence", err);
+            }
+          }
+        });
 
       channelRef.current = channel;
       return channel;
     },
-    [cleanup]
+    [playerId, cleanup]
   );
 
   const safeSend = useCallback((channel: ReturnType<typeof supabase.channel> | null, payload: any) => {
@@ -107,7 +201,7 @@ export function useGameRoom() {
 
   const createRoom = useCallback(
     (playerName: string, settings: import("@/lib/game-types").GameSettings) => {
-      const roomCode = generateRoomCode();
+      const roomCode = generateRoomCode("F");
       const maxHearts = settings.maxHearts ?? 3;
       const host: Player = {
         id: playerId,
@@ -119,6 +213,7 @@ export function useGameRoom() {
         isEliminated: false,
         missedTurns: 0,
         hearts: maxHearts,
+        isOnline: true,
       };
       const state: GameState = {
         roomCode,
@@ -160,6 +255,7 @@ export function useGameRoom() {
         isEliminated: false,
         missedTurns: 0,
         hearts: undefined, // will be set by host when game starts
+        isOnline: true,
       };
       const channel = subscribeToChannel(roomCode.toUpperCase(), false);
       setTimeout(() => {
@@ -192,6 +288,9 @@ export function useGameRoom() {
         hearts: maxHearts,
       })),
       winnerId: null,
+      guessLimitEnabled: gameState.guessLimitEnabled,
+      guessLimitDifficulty: gameState.guessLimitDifficulty,
+      maxGuesses: Math.ceil(Math.log2(gameState.maxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
       turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
     };
     setGameState(updated);
@@ -232,21 +331,51 @@ export function useGameRoom() {
       );
 
       const isWinner = hint === "correct";
-      const nextTurnIndex = isWinner
+      
+      let nextTurnIndex = isWinner
         ? gameState.currentTurnIndex
         : getNextTurnIndex(gameState.currentTurnIndex, updatedPlayers);
 
+      let finalPlayers = updatedPlayers;
+      let status: GameState["status"] = isWinner ? "finished" : "playing";
+      let winnerId = isWinner ? playerId : null;
+
+      // Handle Guess Limit Elimination
+      if (!isWinner && gameState.guessLimitEnabled) {
+        const m = gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2;
+        const pLimit = gameState.maxGuesses || Math.ceil(Math.log2(gameState.maxRange) * m);
+        const currentPlayerAfter = updatedPlayers.find(p => p.id === playerId);
+        if (currentPlayerAfter && currentPlayerAfter.attempts >= pLimit) {
+          finalPlayers = updatedPlayers.map(p => p.id === playerId ? { ...p, isEliminated: true } : p);
+          const activePlayers = finalPlayers.filter(p => !p.isEliminated);
+          
+          if (activePlayers.length === 1 && gameState.players.length > 1) {
+            status = "finished";
+            winnerId = activePlayers[0].id;
+          } else if (activePlayers.length === 0) {
+            status = "finished";
+            winnerId = null;
+          } else {
+            nextTurnIndex = getNextTurnIndex(gameState.currentTurnIndex, finalPlayers);
+          }
+        }
+      }
+
+      if (isWinner) {
+        finalPlayers = updatedPlayers.map((p) =>
+            p.id === playerId ? { ...p, score: p.score + 1 } : p
+        );
+      } else if (winnerId && status === "finished") {
+        finalPlayers = finalPlayers.map(p => p.id === winnerId ? { ...p, score: p.score + 1 } : p);
+      }
+
       const updated: GameState = {
         ...gameState,
-        players: isWinner
-          ? updatedPlayers.map((p) =>
-              p.id === playerId ? { ...p, score: p.score + 1 } : p
-            )
-          : updatedPlayers,
+        players: finalPlayers,
         currentTurnIndex: nextTurnIndex,
-        status: isWinner ? "finished" : "playing",
-        winnerId: isWinner ? playerId : null,
-        turnDeadline: gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
+        status,
+        winnerId,
+        turnDeadline: status === "playing" && gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
       };
 
       setGameState(updated);
@@ -321,14 +450,19 @@ export function useGameRoom() {
   const restartGame = useCallback(() => {
     if (!gameState || !channelRef.current) return;
     const maxHearts = gameState.maxHearts ?? 3;
+    const currentMaxRange = gameState.maxRange;
+    const newMaxRange = gameState.autoIncreaseRange ? currentMaxRange * 2 : currentMaxRange;
+    const connectedPlayers = gameState.players.filter(p => p.isOnline !== false);
+    
+    // Safety check: if only one player remains, resetting might be weird, but let them play 1p if they want
     const updated: GameState = {
       ...gameState,
       status: "playing",
-      targetNumber: generateTargetNumber(1, gameState.maxRange),
       currentTurnIndex: 0,
+      targetNumber: generateTargetNumber(1, newMaxRange),
       minRange: 1,
-      maxRange: gameState.maxRange,
-      players: gameState.players.map((p) => ({
+      maxRange: newMaxRange,
+      players: connectedPlayers.map((p) => ({
         ...p,
         attempts: 0,
         guesses: [],
@@ -365,7 +499,7 @@ export function useGameRoom() {
       payload: { targetPlayerId },
     });
     // Remove from host's own state immediately
-    const updated = {
+    const updated: GameState = {
       ...gameState,
       players: gameState.players.filter(p => p.id !== targetPlayerId),
     };
@@ -424,20 +558,99 @@ export function useGameRoom() {
     !gameState.players[gameState.currentTurnIndex]?.isEliminated;
   const isHost = currentPlayer?.isHost ?? false;
 
+  const forceSkipTurn = useCallback(() => {
+    if (!gameState || !channelRef.current || gameState.status !== "playing") return;
+    // Removed `if (!isHost) return;` to allow cascaded fallback enforcing
+
+    
+    const currentPlayerId = gameState.players[gameState.currentTurnIndex]?.id;
+    // Don't force skip our own turn if this is called as a fallback, we already call skipTurn()
+    if (!currentPlayerId || currentPlayerId === playerId) return; 
+
+    const maxHearts = gameState.maxHearts ?? 3;
+    const heartsEnabled = maxHearts > 0;
+
+    let updatedPlayers = gameState.players;
+    let isEliminated = false;
+
+    if (heartsEnabled) {
+      const p = gameState.players[gameState.currentTurnIndex];
+      const currentHearts = p.hearts ?? maxHearts;
+      const newHearts = Math.max(0, currentHearts - 1);
+      isEliminated = newHearts <= 0;
+      updatedPlayers = gameState.players.map(p =>
+        p.id === currentPlayerId ? { ...p, hearts: newHearts, isEliminated, missedTurns: (p.missedTurns || 0) + 1 } : p
+      );
+    } else {
+      updatedPlayers = gameState.players.map(p =>
+        p.id === currentPlayerId ? { ...p, missedTurns: (p.missedTurns || 0) + 1 } : p
+      );
+    }
+
+    const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
+    
+    let status: GameState["status"] = gameState.status;
+    let winnerId = gameState.winnerId;
+    let nextTurnIndex = gameState.currentTurnIndex;
+
+    if (heartsEnabled && activePlayers.length <= 1 && gameState.players.length > 1) {
+      status = "finished";
+      winnerId = activePlayers.length === 1 ? activePlayers[0].id : null;
+      if (winnerId) {
+        updatedPlayers = updatedPlayers.map(p => p.id === winnerId ? { ...p, score: p.score + 1 } : p);
+      }
+    } else {
+      nextTurnIndex = getNextTurnIndex(gameState.currentTurnIndex, updatedPlayers);
+    }
+
+    const updated: GameState = {
+      ...gameState,
+      players: updatedPlayers,
+      status,
+      winnerId,
+      currentTurnIndex: nextTurnIndex,
+      turnDeadline: status === "playing" && gameState.timerEnabled ? Date.now() + (gameState.timerDuration ?? 15000) : undefined,
+    };
+
+    setGameState(updated);
+    safeSend(channelRef.current, {
+      type: "broadcast",
+      event: "game_update",
+      payload: { state: updated },
+    });
+  }, [gameState, isHost, playerId]);
+
   // Timed auto-guess enforcer for Multiplayer
   useEffect(() => {
     if (gameState?.status !== "playing") return;
     
     const interval = setInterval(() => {
       const now = Date.now();
-      if (isMyTurn && gameState.turnDeadline && now >= gameState.turnDeadline) {
-        // Time expired! Skip turn internally without penalties
-        skipTurn();
+      if (gameState.turnDeadline && now >= gameState.turnDeadline) {
+        if (isMyTurn) {
+          // Time expired! Skip turn internally without penalties
+          skipTurn();
+        } else {
+          // Cascaded fallback logic to catch situations where active player or host drops out silently
+          let enforcerDelay = 0;
+          if (isHost) {
+            enforcerDelay = 3000; // Host steps in 3s after deadline
+          } else {
+            const nextIndex = getNextTurnIndex(gameState.currentTurnIndex, gameState.players);
+            if (gameState.players[nextIndex]?.id === playerId) {
+              enforcerDelay = 6000; // Next player steps in 6s after deadline if host is also frozen
+            }
+          }
+
+          if (enforcerDelay > 0 && now >= gameState.turnDeadline + enforcerDelay) {
+            forceSkipTurn();
+          }
+        }
       }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [gameState, isMyTurn, skipTurn]);
+  }, [gameState, isMyTurn, isHost, skipTurn, forceSkipTurn]);
 
   // Sync wins to profile on game end
   useEffect(() => {
@@ -478,6 +691,7 @@ export function useGameRoom() {
     },
     [gameState]
   );
+
 
   return {
     gameState,

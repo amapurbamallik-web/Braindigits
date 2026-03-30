@@ -3,8 +3,8 @@ import logoImg from "@/assets/brain-digits-logo.png";
 
 export function GlobalLogo({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <img src={logoImg} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(0,229,255,0.2)]" />
+    <div className={`flex items-center justify-center gap-3 ${className}`}>
+      <img src={logoImg} alt="Logo" className="w-10 h-10 object-contain -translate-x-1 md:-translate-x-2 drop-shadow-[0_0_10px_rgba(0,229,255,0.2)]" />
       <span className="text-white font-bold tracking-widest text-sm uppercase drop-shadow-[0_0_5px_rgba(0,0,0,0.5)]">BrainDigits</span>
     </div>
   );

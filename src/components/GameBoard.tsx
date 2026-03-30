@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { GameState } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut, Settings2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Trophy, RotateCcw, LogOut, Settings2, ArrowLeft } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
 import confetti from "canvas-confetti";
 import { RoomSettingsModal } from "./RoomSettingsModal";
@@ -199,7 +199,8 @@ export function GameBoard({
     const isMe = winner.id === playerId;
     const losingPlayers = gameState.players.filter(p => p.id !== winner.id);
     const wonByElimination = losingPlayers.some(p => p.isEliminated && (p.hearts ?? 1) <= 0);
-    const wonByGuess = !wonByElimination && winner.guesses.length > 0 && winner.guesses[winner.guesses.length - 1]?.hint === 'correct';
+    const wonByDisconnect = losingPlayers.some(p => p.isEliminated && (p.hearts ?? 1) > 0);
+    const wonByGuess = !wonByElimination && !wonByDisconnect && winner.guesses.length > 0 && winner.guesses[winner.guesses.length - 1]?.hint === 'correct';
     
     return (
       <div className="flex flex-col justify-between items-center min-h-[100dvh] p-4 md:p-6 bg-game-dark overflow-y-auto overflow-x-hidden relative">
@@ -212,7 +213,9 @@ export function GameBoard({
         <div className="w-full max-w-md text-center shrink-0 opacity-0 animate-fade-in-up relative z-10 my-auto py-6" style={{ animationDelay: "0.1s" }}>
           <div className="mb-6 text-center">
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${theme.bgMuted} mb-4 animate-bounce-subtle border ${theme.border} ${theme.glow}`}>
-              {wonByElimination ? (
+              {wonByDisconnect ? (
+                <span className="text-4xl">🔌</span>
+              ) : wonByElimination ? (
                 <span className="text-4xl">💀</span>
               ) : (
                 <Trophy className={`h-10 w-10 ${theme.text}`} />
@@ -221,7 +224,11 @@ export function GameBoard({
             <h2 className="text-4xl font-black tracking-tight text-white mb-2 uppercase drop-shadow-md">
               {isMe ? "Victory!" : "Game Over"}
             </h2>
-            {wonByElimination ? (
+            {wonByDisconnect ? (
+              <p className={`${theme.text} font-bold text-lg`}>
+                {isMe ? "Opponent disconnected! 🔌" : `${winner.name} won by default — someone left!`}
+              </p>
+            ) : wonByElimination ? (
               <p className={`${theme.text} font-bold text-lg`}>
                 {isMe ? "Opponent ran out of lives! ❤️" : `${winner.name} survived — you ran out of lives!`}
               </p>
@@ -255,15 +262,17 @@ export function GameBoard({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setShowLeaveConfirm(true)}
-              className="h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-[0.97]"
+              className="h-14 flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] font-bold transition-all active:scale-[0.97]"
             >
-              <LogOut className="h-4 w-4" />
-              Menu
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </button>
             {isHost && (
               <Button 
                 onClick={onRestart} 
-                className={`h-14 font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
+                disabled={mode !== 'ai' && gameState.players.filter(p => p.isOnline !== false).length < 2}
+                title={(mode !== 'ai' && gameState.players.filter(p => p.isOnline !== false).length < 2) ? "Not enough players to start a new match" : ""}
+                className={`h-14 font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow} disabled:opacity-50 disabled:grayscale`}
               >
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Play Again
@@ -368,16 +377,25 @@ export function GameBoard({
               const playerHearts = player.hearts ?? maxHearts;
               return (
                 <div key={player.id} className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition-all ${
+                    player.id === currentTurnPlayer?.id && !player.isEliminated ? `ring-2 ${theme.ring} shadow-[0_0_15px_currentColor] bg-card/60` :
                     player.id === playerId ? `${theme.bgMuted} ring-1 ${theme.ring}` : player.isEliminated ? "bg-black/30 opacity-50 grayscale" : "bg-muted/40"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className={`w-2 h-2 rounded-full ${player.id === currentTurnPlayer?.id ? "bg-green-400 animate-pulse" : "bg-muted-foreground/30"}`} />
+                    <div 
+                      className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse"}`} 
+                      title={player.isOnline !== false ? "Online" : "Offline"}
+                    />
                     <span className={`font-medium truncate ${player.id === playerId ? theme.text : "text-white/80"}`}>
                       {player.name} {player.id === playerId && "(you)"}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
+                    {gameState.guessLimitEnabled && !player.isEliminated && (
+                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${((gameState.maxGuesses || Math.ceil(Math.log2(gameState.maxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2))) - player.attempts) <= 3 ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse' : 'bg-white/5 border-white/10 text-muted-foreground'}`}>
+                         {(gameState.maxGuesses || Math.ceil(Math.log2(gameState.maxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2))) - player.attempts} Lf
+                       </span>
+                    )}
                     {!player.isEliminated ? <HeartsDisplay hearts={playerHearts} maxHearts={maxHearts} size="sm" /> : <span className="text-[10px] uppercase font-bold text-red-500/70 tracking-tighter uppercase line-through">Out</span>}
                     <span className={`font-mono font-bold ${theme.text}`}>{player.score}pts</span>
                   </div>

@@ -49,7 +49,10 @@ export function useArcadeGame() {
   const subscribeToChannel = useCallback((roomCode: string, isHost: boolean) => {
     cleanup();
     const channel = supabase.channel(`arcade-${roomCode}`, {
-      config: { broadcast: { self: true } },
+      config: { 
+        broadcast: { self: true },
+        presence: { key: playerId },
+      },
     });
 
     channel.on("broadcast", { event: "game_update" }, ({ payload }) => {
@@ -75,7 +78,68 @@ export function useArcadeGame() {
           setError("You were removed from the room by the host.");
         }
       })
-      .subscribe();
+      .on("presence", { event: "leave" }, ({ key }) => {
+        const current = gameStateRef.current;
+        if (!current || !key) return;
+
+        const disconnectedPlayer = current.players.find(p => p.id === key);
+        if (!disconnectedPlayer) return;
+
+        let responsiblePlayerId = current.players.find(p => p.isHost && !p.isEliminated && p.id !== key)?.id;
+
+        if (!responsiblePlayerId) {
+           const remainingPlayers = current.players.filter(p => p.id !== key && !p.isEliminated);
+           if (remainingPlayers.length > 0) {
+             responsiblePlayerId = remainingPlayers[0].id;
+           }
+        }
+
+        if (playerId !== responsiblePlayerId) return;
+
+        if (current.status === "waiting") {
+          const updated = {
+            ...current,
+            players: current.players.filter(p => p.id !== key).map(p => 
+              p.id === responsiblePlayerId ? { ...p, isHost: true } : p
+            ),
+          };
+          setGameState(updated);
+          safeSend(channel, { type: "broadcast", event: "game_update", payload: { state: updated } });
+        } else if (current.status === "playing" || current.status === "level_complete" || current.status === "finished") {
+          const updatedPlayers = current.players.map(p => {
+            if (p.id === key) return { ...p, isEliminated: true, isHost: false, isOnline: false };
+            if (p.id === responsiblePlayerId) return { ...p, isHost: true };
+            return p;
+          });
+
+          const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
+          
+          let status: GameState["status"] = current.status;
+          let nextTurnIndex = current.currentTurnIndex;
+
+          if (activePlayers.length === 0 && current.status === "playing") {
+            status = "finished";
+          } else if (current.players[current.currentTurnIndex]?.id === key && current.status === "playing") {
+            nextTurnIndex = getNextTurnIndex(current.currentTurnIndex, updatedPlayers);
+          }
+
+          const updated: GameState = {
+            ...current,
+            players: updatedPlayers,
+            status,
+            currentTurnIndex: nextTurnIndex,
+            turnDeadline: (status === "playing" && current.turnDeadline) ? Date.now() + (current.timerDuration ?? 15000) : undefined,
+          };
+
+          setGameState(updated);
+          safeSend(channel, { type: "broadcast", event: "game_update", payload: { state: updated } });
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({});
+        }
+      });
 
     channelRef.current = channel;
     return channel;
@@ -87,7 +151,7 @@ export function useArcadeGame() {
   }, []);
 
   const createRoom = useCallback((playerName: string, isOffline = false, startingLevel = 1) => {
-    const roomCode = isOffline ? "LOCAL" : generateRoomCode();
+    const roomCode = isOffline ? "LOCAL" : generateRoomCode("A");
     
     // Scale immediately from the chosen level
     const diff = getArcadeDifficulty(startingLevel);
@@ -101,6 +165,7 @@ export function useArcadeGame() {
       isEliminated: false,
       missedTurns: 0,
       hearts: diff.maxLives,
+      isOnline: true,
     };
     const state: GameState = {
       roomCode,
@@ -142,6 +207,7 @@ export function useArcadeGame() {
       isEliminated: false,
       missedTurns: 0,
       hearts: undefined, // Wait for sync
+      isOnline: true,
     };
     const channel = subscribeToChannel(roomCode.toUpperCase(), false);
     setTimeout(() => {
@@ -252,11 +318,23 @@ export function useArcadeGame() {
         }))
       };
     } else {
+      // Check if player reaches guess limit
+      const pAfterGuess = updatedPlayers.find(p => p.id === playerId);
+      const limitReached = pAfterGuess && pAfterGuess.attempts >= (gameState.optimalGuesses || 999);
+      
+      if (limitReached) {
+        updatedPlayers = updatedPlayers.map(p => p.id === playerId ? { ...p, isEliminated: true } : p);
+      }
+
+      const activePlayers = updatedPlayers.filter(p => !p.isEliminated);
+      const newStatus = activePlayers.length === 0 ? "finished" : gameState.status;
+
       updated = {
         ...gameState,
         players: updatedPlayers,
-        currentTurnIndex: getNextTurnIndex(gameState.currentTurnIndex, updatedPlayers),
-        turnDeadline: Date.now() + (gameState.timerDuration ?? 15000)
+        status: newStatus,
+        currentTurnIndex: newStatus === "playing" ? getNextTurnIndex(gameState.currentTurnIndex, updatedPlayers) : gameState.currentTurnIndex,
+        turnDeadline: newStatus === "playing" ? Date.now() + (gameState.timerDuration ?? 15000) : undefined
       };
     }
     setGameState(updated);
@@ -279,7 +357,7 @@ export function useArcadeGame() {
       currentTurnIndex: getNextTurnIndex(gameState.currentTurnIndex, gameState.players),
       status: "playing",
       turnDeadline: Date.now() + diff.timerDuration,
-      players: gameState.players.map(p => ({
+      players: gameState.players.filter(p => p.isOnline !== false).map(p => ({
         ...p,
         guesses: [],
         attempts: 0,
@@ -300,7 +378,7 @@ export function useArcadeGame() {
       currentTurnIndex: 0,
       minRange: 1,
       maxRange: diff.maxRange,
-      players: gameState.players.map((p) => ({
+      players: gameState.players.filter(p => p.isOnline !== false).map((p) => ({
         ...p,
         attempts: 0,
         guesses: [],
@@ -361,18 +439,29 @@ export function useArcadeGame() {
     leaveRoom();
   }, [gameState, playerId, leaveRoom, safeSend]);
 
-  // Timed auto-guess enforcer
+  // Timed auto-guess enforcer (cascaded)
   useEffect(() => {
     if (gameState?.status !== "playing") return;
     const interval = setInterval(() => {
+      const current = gameStateRef.current;
+      if (!current || current.status !== "playing" || !current.turnDeadline) return;
       const now = Date.now();
-      const isMyTurnInner = gameState.players[gameState.currentTurnIndex]?.id === playerId && !gameState.players[gameState.currentTurnIndex]?.isEliminated;
-      if (isMyTurnInner && gameState.turnDeadline && now >= gameState.turnDeadline) {
-        skipTurn();
+      
+      const currentTurnPlayer = current.players[current.currentTurnIndex];
+      const isMyTurnInner = currentTurnPlayer?.id === playerId && !currentTurnPlayer?.isEliminated;
+      
+      if (isMyTurnInner && now >= current.turnDeadline) {
+         skipTurn();
+         return;
+      }
+      
+      const enforcerDelay = current.players.find(p => p.isHost && !p.isEliminated && p.isOnline !== false)?.id === playerId ? 3000 : 6000;
+      if (!isMyTurnInner && now >= current.turnDeadline + enforcerDelay) {
+         skipTurn();
       }
     }, 500);
     return () => clearInterval(interval);
-  }, [gameState, playerId, skipTurn]);
+  }, [gameState?.status, playerId, skipTurn]);
 
   // Sync high scores / logic to profile
   useEffect(() => {

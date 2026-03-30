@@ -17,14 +17,14 @@ export function getArcadeDifficulty(level: number): ArcadeDifficulty {
     maxRange += stepValue;
   }
   
-  // Formula as requested: ceil(log2(range))
-  const optimalGuesses = Math.ceil(Math.log2(maxRange));
+  // Formula: floor(log2(range)) * 2 (Double the binary search limit for arcade fun)
+  const optimalGuesses = Math.ceil(Math.log2(maxRange)) * 2;
 
-  // Timer: 1.5 seconds per optimal guess (rounded up)
-  const timerDuration = Math.ceil(optimalGuesses * 1.5) * 1000;
+  // Timer: 1.4 seconds per base guess (rounded up)
+  const timerDuration = Math.ceil((optimalGuesses / 2) * 1.4) * 1000;
 
-  // Lives: capped at maximum of 3
-  const maxLives = Math.min(3, Math.ceil(optimalGuesses / 2));
+  // Lives: Fixed 3 for all levels
+  const maxLives = 3;
 
   return {
     maxRange,

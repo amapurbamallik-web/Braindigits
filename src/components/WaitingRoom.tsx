@@ -162,7 +162,13 @@ export function WaitingRoom({ gameState, isHost, onStart, onLeave, onUpdateSetti
                   <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${mode === 'ai' ? 'from-game-amber/20 to-game-amber/40' : 'from-game-cyan/20 to-game-purple/20'} border border-white/10 flex items-center justify-center shrink-0`}>
                     <span className="text-[10px] font-black text-white/80">{player.name?.substring(0,2).toUpperCase() || "??"}</span>
                   </div>
-                  <span className={`font-semibold text-sm truncate ${player.id === user?.id ? theme.text : ''}`}>{player.name}</span>
+                  <div className="flex items-center gap-2 min-w-0 mr-2">
+                    <span className={`font-semibold text-sm truncate ${player.id === user?.id ? theme.text : ''}`}>{player.name}</span>
+                    <div 
+                      className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]"}`} 
+                      title={player.isOnline !== false ? "Online" : "Offline"}
+                    />
+                  </div>
                   {player.isHost && (
                     <span className="text-[10px] font-bold text-white bg-white/10 rounded-full px-2 py-0.5 shrink-0 border border-white/10">
                       Host

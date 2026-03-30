@@ -8,6 +8,7 @@ export interface Player {
   isEliminated?: boolean;
   missedTurns?: number;
   hearts?: number;  // current lives remaining
+  isOnline?: boolean;
 }
 
 export interface GuessRecord {
@@ -30,11 +31,16 @@ export interface GameState {
   timerEnabled?: boolean;
   timerDuration?: number;
   maxHearts?: number;   // configured starting lives (default 3)
+  guessLimitEnabled?: boolean;
+  maxGuesses?: number;
+  guessLimitDifficulty?: 'easy' | 'medium' | 'hard';
+  autoIncreaseRange?: boolean;
   
   // Arcade Mode Additions
   isArcade?: boolean;
   level?: number;
   optimalGuesses?: number;
+  doubleRangeOnLevelUp?: boolean;
 }
 
 export interface GameSettings {
@@ -42,7 +48,11 @@ export interface GameSettings {
   timerEnabled: boolean;
   timerDuration: number;
   maxHearts: number;
+  guessLimitEnabled?: boolean;
+  guessLimitDifficulty?: 'easy' | 'medium' | 'hard';
+  autoIncreaseRange?: boolean;
   isArcade?: boolean; 
+  doubleRangeOnLevelUp?: boolean;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -50,6 +60,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
   timerEnabled: true,
   timerDuration: 15000,
   maxHearts: 3,
+  guessLimitEnabled: true,
+  guessLimitDifficulty: 'easy',
+  autoIncreaseRange: false,
   isArcade: false,
 };
 
@@ -61,10 +74,11 @@ export type BroadcastPayload =
   | { type: "game_over"; winnerId: string; winnerName: string; attempts: number }
   | { type: "game_restart"; state: GameState };
 
-export function generateRoomCode(): string {
+export function generateRoomCode(prefix?: "A" | "F"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 5; i++) {
+  let code = prefix ? prefix : "";
+  const length = 5 - code.length;
+  for (let i = 0; i < length; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;

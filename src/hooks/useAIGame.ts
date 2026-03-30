@@ -57,6 +57,9 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       timerEnabled: settings.timerEnabled,
       timerDuration: settings.timerDuration,
       maxHearts,
+      guessLimitEnabled: settings.guessLimitEnabled,
+      guessLimitDifficulty: settings.guessLimitDifficulty || 'easy',
+      maxGuesses: Math.ceil(Math.log2(settings.maxRange) * (settings.guessLimitDifficulty === 'hard' ? 1 : settings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
     };
     
     aiStateRef.current = { min: 1, max: settings.maxRange };
@@ -100,30 +103,50 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         );
 
         const isWinner = hint === "correct";
-        const nextTurnIndex = isWinner
+        let nextTurnIndex = isWinner
           ? prevState.currentTurnIndex
           : (prevState.currentTurnIndex + 1) % prevState.players.length;
 
-        // Update active min/max hints for AI ONLY if it's the AI's turn
-        if (currentPlayer.id === aiId) {
-          if (hint === "higher") {
-            aiStateRef.current.min = Math.max(aiStateRef.current.min, validGuess + 1);
-          } else if (hint === "lower") {
-            aiStateRef.current.max = Math.min(aiStateRef.current.max, validGuess - 1);
+        let finalPlayers = updatedPlayers;
+        let status: GameState["status"] = isWinner ? "finished" : "playing";
+        let winnerId = isWinner ? currentPlayer.id : null;
+
+        // Handle Guess Limit Elimination
+        if (!isWinner && prevState.guessLimitEnabled) {
+          const m = prevState.guessLimitDifficulty === 'hard' ? 1 : prevState.guessLimitDifficulty === 'medium' ? 1.5 : 2;
+          const pLimit = prevState.maxGuesses || Math.ceil(Math.log2(prevState.maxRange) * m);
+          const pAfter = updatedPlayers.find(p => p.id === currentPlayer.id);
+          if (pAfter && pAfter.attempts >= pLimit) {
+             finalPlayers = updatedPlayers.map(p => p.id === currentPlayer.id ? { ...p, isEliminated: true } : p);
+             const activePlayers = finalPlayers.filter(p => !p.isEliminated);
+             
+             if (activePlayers.length === 1) {
+                status = "finished";
+                winnerId = activePlayers[0].id;
+             } else if (activePlayers.length === 0) {
+                status = "finished";
+                winnerId = null;
+             } else {
+                nextTurnIndex = (prevState.currentTurnIndex + 1) % prevState.players.length;
+             }
           }
+        }
+
+        if (isWinner) {
+           finalPlayers = updatedPlayers.map((p) =>
+              p.id === currentPlayer.id ? { ...p, score: p.score + 1 } : p
+           );
+        } else if (winnerId && status === "finished") {
+           finalPlayers = finalPlayers.map(p => p.id === winnerId ? { ...p, score: p.score + 1 } : p);
         }
 
         return {
           ...prevState,
-          players: isWinner
-            ? updatedPlayers.map((p) =>
-                p.id === currentPlayer.id ? { ...p, score: p.score + 1 } : p
-              )
-            : updatedPlayers,
+          players: finalPlayers,
           currentTurnIndex: nextTurnIndex,
-          status: isWinner ? "finished" : "playing",
-          winnerId: isWinner ? currentPlayer.id : null,
-          turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
+          status,
+          winnerId,
+          turnDeadline: status === "playing" && settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
         };
       });
     },
@@ -233,13 +256,17 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
       if (!prevState) return prevState;
       const maxHearts = prevState.maxHearts ?? 3;
       aiStateRef.current = { min: 1, max: 100 };
+      
+      const currentMax = prevState.maxRange;
+      const newMax = prevState.autoIncreaseRange ? currentMax * 2 : currentMax;
+
       return {
         ...prevState,
         status: "playing",
-        targetNumber: generateTargetNumber(1, settings.maxRange),
+        targetNumber: generateTargetNumber(1, newMax),
         currentTurnIndex: 0,
         minRange: 1,
-        maxRange: settings.maxRange,
+        maxRange: newMax,
         players: prevState.players.map((p) => ({
           ...p,
           attempts: 0,
@@ -250,6 +277,9 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         })),
         winnerId: null,
         round: prevState.round + 1,
+        guessLimitEnabled: settings.guessLimitEnabled,
+        guessLimitDifficulty: settings.guessLimitDifficulty || 'easy',
+        maxGuesses: Math.ceil(Math.log2(settings.maxRange) * (settings.guessLimitDifficulty === 'hard' ? 1 : settings.guessLimitDifficulty === 'medium' ? 1.5 : 2)),
         turnDeadline: settings.timerEnabled ? Date.now() + settings.timerDuration : undefined,
       };
     });
@@ -268,6 +298,8 @@ export function useAIGame(playerName: string, settings: import("@/lib/game-types
         timerEnabled: newSettings.timerEnabled,
         timerDuration: newSettings.timerDuration,
         maxHearts: newSettings.maxHearts ?? 3,
+        guessLimitEnabled: newSettings.guessLimitEnabled,
+        guessLimitDifficulty: newSettings.guessLimitDifficulty || 'easy',
       };
     });
   }, []);

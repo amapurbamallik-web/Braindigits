@@ -67,9 +67,10 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
           {onBack && (
             <button 
               onClick={onBack} 
-              className={`flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-foreground hover:${theme.bgMuted} hover:${theme.text} hover:${theme.border} shadow-lg transition-all active:scale-95 z-50 pointer-events-auto`}
+              className={`flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all active:scale-95 z-50 pointer-events-auto group`}
             >
-              <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 shrink-0" /> <span className="text-sm font-semibold">Back</span>
+              <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 shrink-0 group-hover:-translate-x-1 transition-transform" /> 
+              <span className="text-sm font-bold tracking-tight">Back</span>
             </button>
           )}
           <GlobalLogo className="hidden md:flex pointer-events-auto" />

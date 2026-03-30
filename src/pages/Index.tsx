@@ -11,7 +11,8 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 import { useAIGame } from "@/hooks/useAIGame";
 import { useArcadeGame } from "@/hooks/useArcadeGame";
 import { useGameSounds } from "@/hooks/useGameSounds";
-import { ArrowLeft, Star, Users, Zap, Bot, UserCircle } from "lucide-react";
+import { ArrowLeft, Star, Users, Zap, Bot, UserCircle, Settings2 } from "lucide-react";
+import { RoomSettingsModal } from "@/components/RoomSettingsModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -19,7 +20,19 @@ import { Button } from "@/components/ui/button";
 import { useAudio } from "@/contexts/AudioContext";
 import { GlobalLogo, DeveloperFooter } from "@/components/Branding";
 
-function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCode }: { onExit: () => void, settings: GameSettings, onSettingsChange: (s: GameSettings) => void, initialRoomCode?: string | null }) {
+function MultiplayerWrapper({ 
+  onExit, 
+  settings, 
+  onSettingsChange, 
+  initialRoomCode,
+  onSwitchMode
+}: { 
+  onExit: () => void, 
+  settings: GameSettings, 
+  onSettingsChange: (s: GameSettings) => void, 
+  initialRoomCode?: string | null,
+  onSwitchMode?: (mode: "arcade" | "friends", code: string) => void
+}) {
   const { profile } = useAuth();
   const {
     gameState,
@@ -61,7 +74,14 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
     return (
       <GameLobby 
         onCreateRoom={handleCreateRoom} 
-        onJoinRoom={joinRoom} 
+        onJoinRoom={(code, name) => {
+          if (code.startsWith("A") && onSwitchMode) {
+            toast.info("Arcade code detected! Routing to Arcade Lounge...");
+            onSwitchMode("arcade", code);
+            return;
+          }
+          joinRoom(code, name);
+        }} 
         settings={settings} 
         onSettingsChange={onSettingsChange} 
         onBack={onExit}
@@ -90,10 +110,19 @@ function MultiplayerWrapper({ onExit, settings, onSettingsChange, initialRoomCod
   );
 }
 
-function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSettings }) {
+function AIWrapper({ 
+  onExit, 
+  settings, 
+  onSettingsChange 
+}: { 
+  onExit: () => void, 
+  settings: GameSettings,
+  onSettingsChange: (s: GameSettings) => void
+}) {
   const { profile } = useAuth();
   const [playerName] = useState(() => profile?.username || `Guest-${Math.floor(1000 + Math.random() * 9000)}`);
   const [isStarted, setIsStarted] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const {
     gameState,
@@ -133,57 +162,56 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
 
         <button 
           onClick={onExit} 
-          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/10 backdrop-blur-3xl border border-game-amber/10 text-game-amber/60 hover:bg-game-amber/20 hover:text-game-amber hover:border-game-amber/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto group"
+          className="absolute top-6 left-6 md:left-[22%] flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-3xl border border-white/20 text-white hover:bg-white/20 hover:border-white/40 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto group"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="text-[10px] uppercase font-black tracking-widest">Back</span>
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> <span className="text-[9px] uppercase font-black tracking-widest">Back</span>
+        </button>
+
+        <button 
+          onClick={() => setShowSettings(true)} 
+          className="absolute top-6 right-6 md:right-[22%] flex items-center gap-2 px-3 py-1.5 rounded-full bg-game-amber/10 backdrop-blur-3xl border border-game-amber/20 text-game-amber hover:bg-game-amber/20 hover:border-game-amber/40 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto group"
+        >
+          <Settings2 className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500" /> <span className="text-[9px] uppercase font-black tracking-widest">Settings</span>
         </button>
 
         {/* Play with AI Card */}
-        <div className="w-full max-w-[320px] xs:max-w-xs relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full max-w-[280px] xs:max-w-xs relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
            {/* Decorative corner elements */}
-           <div className="absolute -top-1.5 -left-1.5 w-6 h-6 border-t-2 border-l-2 border-game-amber/30 rounded-tl-lg z-20" />
-           <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 border-b-2 border-r-2 border-game-amber/30 rounded-br-lg z-20" />
+           <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-game-amber/20 rounded-tl-lg z-20" />
+           <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-game-amber/20 rounded-br-lg z-20" />
 
-           <div className="relative bg-[#0a0a0f]/80 backdrop-blur-3xl rounded-[2rem] border border-white/5 shadow-[0_0_60px_rgba(0,0,0,0.8)] p-6 md:p-8 text-center overflow-hidden">
+           <div className="relative bg-[#0a0a0f]/80 backdrop-blur-3xl rounded-[1.5rem] border border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-5 md:p-6 text-center overflow-hidden">
               {/* Internal glow */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-game-amber/40 to-transparent blur-sm" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-[1px] bg-gradient-to-r from-transparent via-game-amber/30 to-transparent blur-sm" />
               
               <div className="relative z-10">
                  {/* Central Bot Intelligence Avatar */}
-                 <div className="mb-6 relative inline-block">
-                    <div className="absolute inset-0 bg-game-amber/20 blur-xl rounded-full opacity-40 animate-pulse" />
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-black/60 border border-game-amber/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(251,191,36,0.15)] animate-float">
-                       <Bot className="w-10 h-10 md:w-12 md:h-12 text-game-amber drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
-                       
-                       {/* Animated Scan Line */}
-                       <div className="absolute inset-x-0 top-0 h-[1px] bg-game-amber/40 animate-scanner-vertical pointer-events-none" />
+                 <div className="mb-4 relative inline-block">
+                    <div className="absolute inset-0 bg-game-amber/20 blur-xl rounded-full opacity-30 animate-pulse" />
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-black/60 border border-game-amber/20 flex items-center justify-center relative z-10 shadow-[inner_0_0_15px_rgba(251,191,36,0.1)]">
+                       <Bot className="w-7 h-7 md:w-8 md:h-8 text-game-amber drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
+                       <div className="absolute inset-x-0 top-0 h-[1px] bg-game-amber/30 animate-scanner-vertical pointer-events-none" />
                     </div>
-                    
-                    {/* Floating circular UI rings */}
-                    <div className="absolute -inset-3 border border-game-amber/10 rounded-full animate-spin-slow opacity-30 pointer-events-none" />
-                    <div className="absolute -inset-6 border border-white/5 rounded-full animate-reverse-spin-slow opacity-20 pointer-events-none" />
                  </div>
 
-                 <h2 className="text-3xl md:text-4xl font-black text-white mb-1 uppercase tracking-tighter drop-shadow-md">Play with AI</h2>
-                 <p className="text-game-amber font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em] mb-6 opacity-60">"Battle the mind of a machine"</p>
+                 <h2 className="text-2xl md:text-3xl font-black text-white mb-0.5 uppercase tracking-tighter drop-shadow-md italic [transform:skewX(-10deg)]">Play with AI</h2>
+                 <p className="text-game-amber font-bold text-[8px] uppercase tracking-[0.4em] mb-4 opacity-50 italic">Machine Breached</p>
 
                  {/* Bio-Sync Player Badge */}
-                 <div className="mb-8 p-4 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col items-center gap-1 transition-all hover:bg-white/[0.05] group/sync">
+                 <div className="mb-6 p-3 rounded-lg bg-white/[0.02] border border-white/5 flex flex-col items-center gap-0.5 transition-all hover:bg-white/[0.04]">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                       <div className="w-1 h-1 rounded-full bg-game-amber animate-pulse" />
-                       <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest group-hover/sync:text-game-amber/60 transition-colors line-clamp-1">Neural Sync Active</span>
+                       <span className="text-[7px] text-muted-foreground uppercase font-black tracking-widest transition-colors line-clamp-1 opacity-40">Neural Sync Status</span>
                     </div>
                     <div className="flex items-center gap-2">
-                       <UserCircle className="w-4 h-4 text-game-amber/40" />
-                       <span className="text-lg md:text-xl font-black text-white truncate max-w-[150px]">{playerName}</span>
+                       <UserCircle className="w-3.5 h-3.5 text-game-amber/40" />
+                       <span className="text-base md:text-lg font-black text-white truncate max-w-[120px]">{playerName}</span>
                     </div>
                  </div>
 
                  <button 
-                   className="w-full h-14 md:h-16 rounded-xl bg-game-amber text-game-dark font-black tracking-[0.3em] text-xs md:text-sm uppercase transition-all shadow-[0_0_30px_rgba(251,191,36,0.3)] hover:shadow-[0_0_50px_rgba(251,191,36,0.5)] hover:scale-[1.02] active:scale-[0.97] relative overflow-hidden group/btn"
+                   className="w-full h-12 md:h-14 rounded-lg bg-game-amber text-game-dark font-black tracking-[0.2em] text-[10px] md:text-xs uppercase transition-all shadow-[0_5px_20px_rgba(251,191,36,0.2)] hover:shadow-[0_8px_30px_rgba(251,191,36,0.3)] hover:scale-[1.02] active:scale-[0.97] relative overflow-hidden group/btn"
                    onClick={() => setIsStarted(true)}
                  >
-                    <div className="absolute inset-0 bg-white/20 -translate-x-[150%] skew-x-12 group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-in-out" />
                     <span className="relative z-10">Launch Battle</span>
                  </button>
               </div>
@@ -196,6 +224,13 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
         </div>
 
         <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-30 hover:opacity-100 transition-all duration-700" />
+
+        <RoomSettingsModal 
+          open={showSettings} 
+          onClose={() => setShowSettings(false)} 
+          settings={settings} 
+          onSettingsChange={onSettingsChange} 
+        />
       </div>
     );
   }
@@ -228,7 +263,15 @@ function getGuestArcadeData() {
   return { arcade_max_level: 0, arcade_score: 0, arcade_stars: {} };
 }
 
-function ArcadeWrapper({ onExit }: { onExit: () => void }) {
+function ArcadeWrapper({ 
+  onExit,
+  initialRoomCode,
+  onSwitchMode
+}: { 
+  onExit: () => void,
+  initialRoomCode?: string | null,
+  onSwitchMode?: (mode: "arcade" | "friends", code: string) => void
+}) {
   const { profile, updateProfileField } = useAuth();
   const { playSfx } = useAudio();
   const [guestData, setGuestData] = useState(() => getGuestArcadeData());
@@ -254,6 +297,16 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
   } = useArcadeGame();
 
   useGameSounds(gameState, playerId);
+
+  useEffect(() => {
+    if (initialRoomCode && !gameState) {
+      if (initialRoomCode.startsWith("A")) {
+        joinRoom(initialRoomCode, profile?.username || "Player");
+        setShowLobby(true);
+        setIsStarted(true);
+      }
+    }
+  }, [initialRoomCode, gameState, joinRoom, profile?.username]);
 
   // Background hook to persist Arcade High Scores & Max Level!
   useEffect(() => {
@@ -388,119 +441,94 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
         style={{ backgroundImage: 'radial-gradient(circle at 0% 0%, rgba(171,71,188,0.03) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(0,229,255,0.03) 0%, transparent 50%)' }}
       >
         {/* Global Navigation - Minimalist High Tech */}
-        <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-50 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full p-6 md:p-10 flex justify-between items-center z-50 pointer-events-none">
           <button 
             onClick={() => { playSfx('click'); onExit(); }} 
-            className="flex items-center gap-3 px-8 py-3 rounded-sm bg-red-500/[0.03] backdrop-blur-3xl border border-red-500/20 text-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300 active:scale-90 pointer-events-auto group relative overflow-hidden"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 text-white/40 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:bg-white/10 hover:text-white hover:border-white/30 transition-all duration-300 active:scale-90 pointer-events-auto group"
           >
-            <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-red-400 group-hover:w-full transition-all duration-500" />
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="font-black text-[10px] uppercase tracking-[0.4em]">Abort Arena</span>
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> <span className="font-black text-[9px] uppercase tracking-[0.25em]">Back</span>
           </button>
-          <GlobalLogo className="hidden lg:flex pointer-events-auto opacity-20 hover:opacity-100 transition-all duration-700" />
+          <GlobalLogo className="hidden lg:flex pointer-events-auto opacity-10 hover:opacity-50 transition-all duration-700 w-32 justify-end" />
         </div>
 
         {/* Digital Vanguard Selection Grid */}
-        <div className="w-full max-w-6xl flex flex-col gap-4 relative z-10 px-4 md:px-12 mt-16 lg:mt-0">
+        <div className="w-full max-w-lg flex flex-col items-center gap-5 relative z-10 px-4 md:px-6 mt-8">
            
-           {/* ── Vanguard Header: Infinite Solo ── */}
-           <div 
+           <div className="w-full flex flex-col items-center gap-4 mb-2 animate-in fade-in slide-in-from-top-4 duration-1000">
+              <div className="w-full flex justify-center scale-[1.1] md:scale-[1.25] -translate-x-1">
+                 <GlobalLogo />
+              </div>
+              <div className="flex flex-col items-center">
+                 <h2 className="text-[10px] md:text-[11px] font-black text-white/40 uppercase tracking-[0.6em] mb-1">Mission Protocol</h2>
+                 <p className="text-[8px] md:text-[9px] font-bold text-game-purple/60 uppercase tracking-widest text-center">Neural Breach Authorization Required</p>
+              </div>
+           </div>
+
+           {/* ── Vanguard Button: Infinite Solo ── */}
+           <button 
              onClick={() => { playSfx('click'); setShowLevelSelect(true); }}
-             className="group relative h-36 md:h-48 rounded-sm md:rounded-md overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-purple/40 transition-all duration-300 active:scale-[0.98] shadow-[0_45px_100px_rgba(0,0,0,0.8)] [transform-style:preserve-3d] [transform:rotateY(1.2deg)] hover:[transform:rotateY(-4deg)] bg-[#0a0a0f]"
+             className="group relative w-full h-24 md:h-28 rounded-2xl overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-purple/40 transition-all duration-300 active:scale-[0.98] shadow-[0_20px_50px_rgba(0,0,0,0.6)] bg-[#0a0a0f] flex items-center"
            >
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-purple shadow-[0_0_15px_rgba(171,71,188,0.8)] z-30 animate-pulse duration-[3000ms]" />
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-purple shadow-[0_0_15px_rgba(171,71,188,0.8)] z-30" />
+              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-purple/10 to-transparent z-10" />
               
-              <div 
-                className="absolute inset-0 opacity-[0.03] select-none pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
-              />
-
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none overflow-hidden">
-                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer-ultra" />
-              </div>
-
-              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-purple/15 via-[#0a0a0f]/80 to-[#0a0a0f] z-10" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,rgba(171,71,188,0.2),transparent_70%)] group-hover:bg-[radial-gradient(circle_at_10%_50%,rgba(171,71,188,0.3),transparent_70%)] transition-all duration-1000" />
-              
-              <div className="absolute inset-0 px-6 md:px-10 flex items-center justify-between z-20">
-                 <div className="flex items-center gap-6 md:gap-8">
-                    <div className="relative group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
-                       <div className="absolute inset-0 bg-game-purple/40 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
-                       <div className="w-12 h-12 md:w-20 md:h-20 rounded-sm bg-[#050508] border border-game-purple/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(171,71,188,0.2)]">
-                          <Star className="w-6 h-6 md:w-10 md:h-10 text-game-purple fill-game-purple drop-shadow-[0_0_20px_rgba(171,71,188,1)]" />
-                          <div className="absolute top-0 left-0 w-full h-[2px] bg-game-purple/50 animate-scanner-vertical pointer-events-none" />
-                       </div>
-                    </div>
-                    <div>
-                       <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1 [transform:skewX(-10deg)] group-hover:translate-x-4 transition-transform duration-700 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">Infinite Solo</h3>
-                       <div className="flex items-center gap-2 group-hover:translate-x-4 transition-transform duration-700 delay-75">
-                          <span className="w-1.5 h-1.5 rounded-full bg-game-purple animate-pulse" />
-                          <p className="text-fuchsia-200/40 text-[9px] md:text-xs font-black uppercase tracking-[0.5em]">Sector: Survival Elite</p>
-                       </div>
+              <div className="relative px-5 md:px-8 flex items-center gap-4 md:gap-7 z-20 w-full">
+                 <div className="relative shrink-0 group-hover:scale-110 transition-transform duration-500">
+                    <div className="absolute inset-0 bg-game-purple/30 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-11 h-11 md:w-14 md:h-14 rounded-xl bg-black/40 border border-game-purple/30 flex items-center justify-center relative z-10 shadow-inner">
+                       <Star className="w-5 h-5 md:w-7 md:h-7 text-game-purple fill-game-purple" />
+                       <div className="absolute top-0 left-0 w-full h-0.5 bg-game-purple/40 animate-scanner-vertical" />
                     </div>
                  </div>
-                 
-                 <div className="hidden lg:flex flex-col items-end gap-3 group-hover:translate-x-[-20px] transition-transform duration-700">
-                    <div className="text-[10px] font-black text-game-purple uppercase tracking-[0.6em] opacity-30 group-hover:opacity-60 transition-opacity">Neural Sync Ready</div>
-                    <div className="h-12 md:h-16 px-12 rounded-sm bg-[#0a0a0f] border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-purple group-hover:text-game-dark group-hover:border-game-purple group-hover:shadow-[0_0_30px_rgba(171,71,188,0.5)] transition-all duration-500 uppercase tracking-[0.3em] text-[10px]">
-                       Initiate Breach
+                 <div className="text-left flex-1 min-w-0">
+                    <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tighter group-hover:translate-x-1 transition-transform italic [transform:skewX(-10deg)] leading-none">Infinite Solo</h3>
+                    <div className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-2">
+                       <span className="w-1 h-1 rounded-full bg-game-purple animate-pulse" />
+                       <p className="text-[8px] md:text-[9px] text-game-purple/40 font-black uppercase tracking-[0.3em] md:tracking-[0.4em]">Sector: Survival Elite</p>
                     </div>
                  </div>
+                 <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 transition-transform">
+                    <Zap className="w-4 h-4 md:w-5 md:h-5 text-game-purple animate-pulse" />
+                 </div>
               </div>
-
-              <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-10 transition-all duration-1000 select-none pointer-events-none group-hover:translate-y-[-10%]">
-                 <span className="text-9xl md:text-[18rem] font-black italic text-game-purple tracking-tighter">VANGUARD</span>
+              
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
+                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent animate-shimmer-ultra" />
               </div>
-           </div>
+           </button>
 
-           {/* ── Vanguard Header: Arcade Lounge ── */}
-           <div 
+           {/* ── Vanguard Button: Arcade Lounge ── */}
+           <button 
              onClick={() => { playSfx('click'); setShowLobby(true); }}
-             className="group relative h-36 md:h-48 rounded-sm md:rounded-md overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-cyan/40 transition-all duration-300 active:scale-[0.98] shadow-[0_45px_100px_rgba(0,0,0,0.8)] [transform-style:preserve-3d] [transform:rotateY(1.2deg)] hover:[transform:rotateY(-4deg)] bg-[#0a0a0f]"
+             className="group relative w-full h-24 md:h-28 rounded-2xl overflow-hidden cursor-pointer border border-white/[0.05] hover:border-game-cyan/40 transition-all duration-300 active:scale-[0.98] shadow-[0_20px_50px_rgba(0,0,0,0.6)] bg-[#0a0a0f] flex items-center"
            >
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-cyan shadow-[0_0_15px_rgba(0,229,255,0.8)] z-30 animate-pulse duration-[3500ms]" />
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-game-cyan shadow-[0_0_15px_rgba(0,229,255,0.8)] z-30" />
+              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-cyan/10 to-transparent z-10" />
               
-              <div 
-                className="absolute inset-0 opacity-[0.03] select-none pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
-              />
-
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none overflow-hidden">
-                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer-ultra" />
-              </div>
-
-              <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-r from-game-cyan/15 via-[#0a0a0f]/80 to-[#0a0a0f] z-10" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,rgba(0,229,255,0.15),transparent_70%)] group-hover:bg-[radial-gradient(circle_at_10%_50%,rgba(0,229,255,0.25),transparent_70%)] transition-all duration-1000" />
-              
-              <div className="absolute inset-0 px-6 md:px-10 flex items-center justify-between z-20">
-                 <div className="flex items-center gap-6 md:gap-8">
-                    <div className="relative group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700">
-                       <div className="absolute inset-0 bg-game-cyan/40 blur-2xl rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
-                       <div className="w-12 h-12 md:w-20 md:h-20 rounded-sm bg-[#050508] border border-game-cyan/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(0,229,255,0.2)]">
-                          <Users className="w-6 h-6 md:w-10 md:h-10 text-game-cyan drop-shadow-[0_0_20px_rgba(0,229,255,1)]" />
-                          <div className="absolute top-0 left-0 w-full h-[2px] bg-game-cyan/40 animate-scanner-vertical pointer-events-none" />
-                       </div>
-                    </div>
-                    <div>
-                       <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1 [transform:skewX(-10deg)] group-hover:translate-x-4 transition-transform duration-700 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">Arcade Lounge</h3>
-                       <div className="flex items-center gap-2 group-hover:translate-x-4 transition-transform duration-700 delay-75">
-                          <span className="w-1.5 h-1.5 rounded-full bg-game-cyan animate-pulse" />
-                          <p className="text-cyan-200/40 text-[9px] md:text-xs font-black uppercase tracking-[0.5em]">Sector: Multiplayer Clash</p>
-                       </div>
+              <div className="relative px-5 md:px-8 flex items-center gap-4 md:gap-7 z-20 w-full">
+                 <div className="relative shrink-0 group-hover:scale-110 transition-transform duration-500">
+                    <div className="absolute inset-0 bg-game-cyan/30 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-11 h-11 md:w-14 md:h-14 rounded-xl bg-black/40 border border-game-cyan/30 flex items-center justify-center relative z-10 shadow-inner">
+                       <Users className="w-5 h-5 md:w-7 md:h-7 text-game-cyan" />
+                       <div className="absolute top-0 left-0 w-full h-0.5 bg-game-cyan/40 animate-scanner-vertical" />
                     </div>
                  </div>
-                 
-                 <div className="hidden lg:flex flex-col items-end gap-3 group-hover:translate-x-[-20px] transition-transform duration-700">
-                    <div className="text-[10px] font-black text-game-cyan uppercase tracking-[0.6em] opacity-30 group-hover:opacity-60 transition-opacity">Protocol: Comms Link Synced</div>
-                    <div className="h-12 md:h-16 px-12 rounded-sm bg-[#0a0a0f] border border-white/10 flex items-center justify-center font-black text-white group-hover:bg-game-cyan group-hover:text-game-dark group-hover:border-game-cyan group-hover:shadow-[0_0_30px_rgba(0,229,255,0.5)] transition-all duration-500 uppercase tracking-[0.3em] text-[10px]">
-                       Initiate Clash
+                 <div className="text-left flex-1 min-w-0">
+                    <h3 className="text-xl md:text-3xl font-black text-white uppercase tracking-tighter group-hover:translate-x-1 transition-transform italic [transform:skewX(-10deg)] leading-none">Arcade Lounge</h3>
+                    <div className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-2">
+                       <span className="w-1 h-1 rounded-full bg-game-cyan animate-pulse" />
+                       <p className="text-[8px] md:text-[9px] text-game-cyan/40 font-black uppercase tracking-[0.3em] md:tracking-[0.4em]">Sector: Multiplayer Clash</p>
                     </div>
+                 </div>
+                 <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 transition-transform">
+                    <Zap className="w-4 h-4 md:w-5 md:h-5 text-game-cyan animate-pulse" />
                  </div>
               </div>
 
-              <div className="absolute bottom-[-10%] right-[-5%] opacity-[0.03] group-hover:opacity-10 transition-all duration-1000 select-none pointer-events-none group-hover:translate-y-[-10%]">
-                 <span className="text-9xl md:text-[18rem] font-black italic text-game-cyan tracking-tighter">PROTOCOL</span>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
+                 <div className="absolute top-0 -left-[100%] w-[40%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent animate-shimmer-ultra" />
               </div>
-           </div>
+           </button>
         </div>
 
         <div className="mt-4 lg:mt-6 flex items-center gap-8 opacity-20 hover:opacity-100 transition-opacity duration-700 select-none">
@@ -522,7 +550,14 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
     return (
       <GameLobby 
         onCreateRoom={(name) => createRoom(name)} 
-        onJoinRoom={(code, name) => joinRoom(code, name)} 
+        onJoinRoom={(code, name) => {
+          if (code.startsWith("F") && onSwitchMode) {
+            toast.info("Friends code detected! Routing to Waiting Room...");
+            onSwitchMode("friends", code);
+            return;
+          }
+          joinRoom(code, name);
+        }} 
         settings={DEFAULT_SETTINGS} 
         onSettingsChange={() => {}} 
         onBack={() => setShowLobby(false)}
@@ -628,15 +663,15 @@ export default function Index() {
 
   const renderContent = () => {
     if (mode === "friends") {
-      return <MultiplayerWrapper onExit={() => { setMode("select"); setInviteCode(null); }} settings={settings} onSettingsChange={setSettings} initialRoomCode={inviteCode} />;
+      return <MultiplayerWrapper onExit={() => { setMode("select"); setInviteCode(null); }} settings={settings} onSettingsChange={setSettings} initialRoomCode={inviteCode} onSwitchMode={(newMode, code) => { setMode(newMode); setInviteCode(code); }} />;
     }
 
     if (mode === "ai") {
-      return <AIWrapper onExit={() => setMode("select")} settings={settings} />;
+      return <AIWrapper onExit={() => setMode("select")} settings={settings} onSettingsChange={setSettings} />;
     }
 
     if (mode === "arcade") {
-      return <ArcadeWrapper onExit={() => setMode("select")} />;
+      return <ArcadeWrapper onExit={() => { setMode("select"); setInviteCode(null); }} initialRoomCode={inviteCode} onSwitchMode={(newMode, code) => { setMode(newMode); setInviteCode(code); }} />;
     }
 
     return <ModeSelection onSelectMode={setMode} settings={settings} onSettingsChange={setSettings} />;
