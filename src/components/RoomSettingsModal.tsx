@@ -254,17 +254,6 @@ export function RoomSettingsModal({
             )}
           </section>
 
-          {/* ── Sound Effects ── */}
-          <section className="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-3 py-2.5">
-            <div className="flex items-center gap-2.5">
-              {isSoundEnabled ? <Volume2 className="w-4 h-4 text-game-amber" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
-              <div>
-                <p className="text-sm font-semibold text-white leading-tight">Sound Effects</p>
-                <p className="text-[11px] text-muted-foreground">Personal device audio</p>
-              </div>
-            </div>
-            <Toggle on={isSoundEnabled} onToggle={toggleSound} />
-          </section>
         </div>
 
         {/* Footer — sticky */}

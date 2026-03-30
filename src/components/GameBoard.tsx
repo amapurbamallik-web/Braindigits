@@ -252,10 +252,10 @@ export function GameBoard({
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setShowLeaveConfirm(true)}
-              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-[0.97]"
+              className="h-14 flex items-center justify-center gap-2 rounded-xl border border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-[0.97]"
             >
               <LogOut className="h-4 w-4" />
               Menu
@@ -263,10 +263,20 @@ export function GameBoard({
             {isHost && (
               <Button 
                 onClick={onRestart} 
-                className={`flex-1 h-14 font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
+                className={`h-14 font-black active:scale-[0.97] transition-all ${theme.primary} ${theme.hover} ${theme.textDark} ${theme.glow}`}
               >
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Play Again
+              </Button>
+            )}
+            {isHost && (
+              <Button
+                onClick={() => setShowSettings(true)}
+                variant="outline"
+                className={`col-span-2 h-12 flex items-center justify-center gap-2 rounded-xl border-dashed ${theme.border} ${theme.text} hover:${theme.bgMuted} font-bold transition-all active:scale-[0.97]`}
+              >
+                <Settings2 className="h-4 w-4" />
+                Match Settings
               </Button>
             )}
           </div>
@@ -281,6 +291,18 @@ export function GameBoard({
           open={showLeaveConfirm}
           onCancel={() => setShowLeaveConfirm(false)}
           onConfirm={() => { setShowLeaveConfirm(false); onLeave(); }}
+        />
+
+        <RoomSettingsModal
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={{
+            maxRange: gameState.maxRange,
+            timerEnabled: gameState.timerEnabled ?? true,
+            timerDuration: gameState.timerDuration ?? 15000,
+            maxHearts: gameState.maxHearts ?? 3
+          }}
+          onSettingsChange={onUpdateSettings}
         />
       </div>
     );
