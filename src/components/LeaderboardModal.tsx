@@ -71,8 +71,6 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
     }
   };
 
-
-
   const { data: leaders = [], isLoading: loading, error, refetch } = useQuery({
     queryKey: ["leaderboard", tab],
     queryFn: async () => {

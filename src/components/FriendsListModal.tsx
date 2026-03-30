@@ -560,56 +560,56 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
             </>
           )}
         </div>
+      </div>
 
-        <ProfileModal 
-          open={!!selectedProfile} 
-          onClose={() => setSelectedProfile(null)} 
-          profile={selectedProfile} 
-          readOnly 
-        />
+      <ProfileModal 
+        open={!!selectedProfile} 
+        onClose={() => setSelectedProfile(null)} 
+        profile={selectedProfile} 
+        readOnly 
+      />
 
-        {/* Delete Confirmation Modal */}
-        {friendToDelete && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="w-full max-w-sm bg-[#0a0a0f] border border-red-500/30 rounded-[2rem] p-8 shadow-[0_0_80px_rgba(239,68,68,0.15)] animate-in zoom-in-95 relative overflow-hidden text-center">
-              <div className="absolute top-[-20%] left-[-20%] w-48 h-48 bg-red-500/10 rounded-full blur-[80px]" />
+      {/* Delete Confirmation Modal */}
+      {friendToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-[#0a0a0f] border border-red-500/30 rounded-[2rem] p-8 shadow-[0_0_80px_rgba(239,68,68,0.15)] animate-in zoom-in-95 relative overflow-hidden text-center">
+            <div className="absolute top-[-20%] left-[-20%] w-48 h-48 bg-red-500/10 rounded-full blur-[80px]" />
+            
+            <div className="relative z-10">
+              <div className="w-20 h-20 mx-auto rounded-3xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                <Reject className="w-10 h-10 text-red-500" />
+              </div>
               
-              <div className="relative z-10">
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                  <Reject className="w-10 h-10 text-red-500" />
-                </div>
-                
-                <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Remove Friend?</h2>
-                <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-                  Are you sure you want to disconnect from <strong className="text-white">{friendToDelete.friend.username}</strong>?
-                </p>
-                
-                <div className="flex flex-col gap-3">
-                  <Button 
-                    onClick={() => {
-                      respondToRequest(friendToDelete.id, "reject");
-                      setFriendToDelete(null);
-                    }}
-                    className="w-full h-14 bg-red-500 hover:bg-red-600 text-white font-black text-lg shadow-[0_5px_25px_rgba(239,68,68,0.3)] active:scale-[0.98] transition-all uppercase tracking-widest"
-                  >
-                    Confirm Delete
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      playSfx('click');
-                      setFriendToDelete(null);
-                    }}
-                    variant="outline"
-                    className="w-full h-14 bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-95"
-                  >
-                    Keep Friend
-                  </Button>
-                </div>
+              <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Remove Friend?</h2>
+              <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
+                Are you sure you want to disconnect from <strong className="text-white">{friendToDelete?.friend?.username || "this player"}</strong>?
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={() => {
+                    if (friendToDelete) respondToRequest(friendToDelete.id, "reject");
+                    setFriendToDelete(null);
+                  }}
+                  className="w-full h-14 bg-red-500 hover:bg-red-600 text-white font-black text-lg shadow-[0_5px_25px_rgba(239,68,68,0.3)] active:scale-[0.98] transition-all uppercase tracking-widest"
+                >
+                  Confirm Delete
+                </Button>
+                <Button 
+                  onClick={() => {
+                    playSfx('click');
+                    setFriendToDelete(null);
+                  }}
+                  variant="outline"
+                  className="w-full h-14 bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-95"
+                >
+                  Keep Friend
+                </Button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
