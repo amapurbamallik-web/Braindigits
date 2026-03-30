@@ -33,10 +33,13 @@ export function usePresence(currentUserId: string | undefined): Set<string> {
     // When any user joins or leaves, rebuild the online set
     channel.on("presence", { event: "sync" }, () => {
       const state = channel.presenceState<{ user_id: string }>();
+      if (!state) return;
+      
       const ids = new Set<string>();
       Object.values(state).forEach((presences) => {
+        if (!Array.isArray(presences)) return;
         presences.forEach((p: any) => {
-          if (p.user_id) ids.add(p.user_id);
+          if (p?.user_id) ids.add(p.user_id);
         });
       });
       setOnlineIds(ids);

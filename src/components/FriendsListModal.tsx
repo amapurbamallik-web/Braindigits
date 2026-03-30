@@ -429,21 +429,18 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                           }}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
-                            <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedProfile(friend.friend as UserProfile); }}>
-                              <Avatar
-                                src={friend.friend.avatar_url}
-                                initials={friend.friend.username?.substring(0, 2) || "??"}
-                                size="w-10 h-10"
-                                emojiSize="text-xl"
-                                className="rounded-xl border border-white/10 bg-gradient-to-br from-game-cyan/10 to-game-purple/10 hover:scale-110 transition-transform duration-300 shadow-md"
+                            <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (friend.friend) setSelectedProfile(friend.friend as UserProfile); }}>
+                              <Avatar 
+                                src={friend.friend?.avatar_url} 
+                                initials={friend.friend?.username} 
+                                className={`ring-2 ${onlineIds?.has?.(friend.friend?.id) ? "ring-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "ring-white/5"}`}
                               />
-                              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0a0a0f] transition-all duration-500 ${onlineIds.has(friend.friend.id) ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)]' : 'bg-white/20'}`} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="text-white text-base font-bold truncate block group-hover:text-game-cyan transition-colors">{friend.friend.username}</span>
-                              <span className={`text-[10px] font-bold uppercase tracking-widest ${onlineIds.has(friend.friend.id) ? 'text-green-400' : 'text-white/25'}`}>
-                                {onlineIds.has(friend.friend.id) ? '● Online' : '● Offline'}
-                              </span>
+                              <span className="text-white text-base font-bold truncate block group-hover:text-game-cyan transition-colors">{friend.friend?.username || "Unknown Player"}</span>
+                              <div className="flex items-center gap-1.5 opacity-40">
+                                <span className="text-[10px] font-black uppercase tracking-widest shrink-0">{onlineIds?.has?.(friend.friend?.id) ? "Online" : "Terminated"}</span>
+                              </div>
                             </div>
                           </div>
                           
@@ -539,14 +536,6 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
               )}
             </>
           )}
-        </div>
-        <div className="mt-8 pt-6 border-t border-white/5 relative z-10 shrink-0">
-          <button 
-            onClick={() => { playSfx('click'); onClose(); }} 
-            className="w-full h-12 bg-white text-game-dark font-black rounded-xl text-xs tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg"
-          >
-            DISCONNECT NETWORK
-          </button>
         </div>
 
         <ProfileModal 
