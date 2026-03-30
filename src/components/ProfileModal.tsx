@@ -41,7 +41,7 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
   const arcadeMaxLevel = profile?.arcade_max_level || 0;
   const arcadeScore = profile?.arcade_score || 0;
   const arcadeStars = profile?.arcade_stars || {};
-  const totalStars = arcadeStars ? Object.values(arcadeStars).reduce((sum, s) => sum + (Number(s) || 0), 0) : 0;
+  const totalStars = (arcadeStars && typeof arcadeStars === 'object') ? Object.values(arcadeStars).reduce((sum, s) => sum + (Number(s) || 0), 0) : 0;
 
   const totalGames = profile?.total_games || 0;
   const winRate = profile && totalGames > 0

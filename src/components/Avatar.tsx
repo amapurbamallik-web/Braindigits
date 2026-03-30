@@ -49,8 +49,8 @@ export function Avatar({
       ) : isEmoji ? (
         <span className={`${emojiSize} leading-none`}>{src}</span>
       ) : (
-        <span className="text-xs font-black text-muted-foreground">
-          {initials ? initials.substring(0, 2).toUpperCase() : "?"}
+        <span className="text-[10px] font-black text-muted-foreground">
+          {initials ? String(initials).substring(0, 2).toUpperCase() : "?"}
         </span>
       )}
     </div>

@@ -10,6 +10,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { usePresence } from "@/hooks/usePresence";
 import { Avatar } from "./Avatar";
 import { ProfileModal } from "./ProfileModal";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 interface FriendsListProps {
   open: boolean;
@@ -27,7 +28,25 @@ type FriendshipData = {
 export function FriendsListModal({ open, onClose, roomCode }: FriendsListProps) {
   if (!open) return null;
   return (
-    <FriendsListModalContent open={open} onClose={onClose} roomCode={roomCode} />
+    <ErrorBoundary name="Friends List" fallback={
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-xl fade-in duration-300">
+        <div className="w-full max-w-md bg-game-dark border border-red-500/30 rounded-[2.5rem] p-8 text-center animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 border-2 border-red-500 flex items-center justify-center mb-6">
+            <X className="h-8 w-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-black text-white mb-2 uppercase">Social Protocol Error</h2>
+          <p className="text-sm text-red-400 mb-6">The neural link to your social network was interrupted. Please try again.</p>
+          <button 
+            onClick={onClose}
+            className="w-full h-12 bg-white text-game-dark font-black rounded-xl text-xs tracking-widest hover:bg-white/90 active:scale-95 transition-all"
+          >
+            DISCONNECT & RETURN
+          </button>
+        </div>
+      </div>
+    }>
+      <FriendsListModalContent open={open} onClose={onClose} roomCode={roomCode} />
+    </ErrorBoundary>
   );
 }
 
@@ -120,7 +139,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
           .from("profiles")
           .select("id, username, avatar_url, total_wins, ai_wins, total_games")
           .ilike("username", `${searchQuery.trim()}%`)
-          .neq("id", user?.id)
+          .neq("id", user?.id || "")
           .limit(5);
         
         if (error) throw error;
@@ -304,7 +323,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                ) : (
                  <div className="space-y-1">
                    {searchResults.map(res => {
-                     const existing = friendships.find(f => f.friend.id === res.id);
+                     const existing = friendships.find(f => f.friend?.id === res?.id);
                      return (
                         <div 
                           key={res.id} 
@@ -313,26 +332,26 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                         >
                           <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-3">
                             <Avatar
-                              src={res.avatar_url}
-                              initials={res.username?.substring(0, 2) || "??"}
+                              src={res?.avatar_url}
+                              initials={res?.username?.substring?.(0, 2) || "??"}
                               size="w-8 h-8"
                               emojiSize="text-lg"
                               className="rounded-full border border-white/10 shrink-0 group-hover:scale-110 transition-transform duration-300"
                             />
-                            <span className="text-sm font-bold text-white truncate group-hover:text-game-cyan transition-colors">{res.username}</span>
+                            <span className="text-sm font-bold text-white truncate group-hover:text-game-cyan transition-colors">{res?.username || "Unknown"}</span>
                           </div>
                           
                           <div className="shrink-0 flex items-center">
                             {existing ? (
-                              <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-1 rounded-md ${existing.status === 'accepted' ? 'bg-game-cyan/10 text-game-cyan border border-game-cyan/20' : 'bg-game-amber/10 text-game-amber border border-game-amber/20'}`}>
-                                {existing.status === "accepted" ? "Friends" : "Pending"}
+                              <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-1 rounded-md ${existing?.status === 'accepted' ? 'bg-game-cyan/10 text-game-cyan border border-game-cyan/20' : 'bg-game-amber/10 text-game-amber border border-game-amber/20'}`}>
+                                {existing?.status === "accepted" ? "Friends" : "Pending"}
                               </span>
                             ) : (
                              <button 
                                onClick={(e) => {
                                  e.stopPropagation();
                                  playSfx('click');
-                                 handleSendRequest(res.id, res.username);
+                                 if (res?.id && res?.username) handleSendRequest(res.id, res.username);
                                }}
                                className="text-xs bg-white text-black px-4 py-1.5 rounded-lg font-bold hover:bg-gray-200 active:scale-95 transition-transform flex items-center gap-1 shadow-md"
                              >
@@ -411,14 +430,18 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                       {onlineIds.size > 0 && (
                         <span className="text-[10px] font-black text-green-400 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-                          {[...friends].filter(f => onlineIds.has(f.friend.id)).length} online
+                          {[...friends].filter(f => f?.friend?.id && onlineIds?.has?.(f.friend.id)).length} online
                         </span>
                       )}
                       <span className="text-[10px] font-bold text-muted-foreground/50 bg-white/5 px-2 py-0.5 rounded-full">{friends.length}</span>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {[...friends].sort((a, b) => (onlineIds.has(b.friend.id) ? 1 : 0) - (onlineIds.has(a.friend.id) ? 1 : 0)).map(friend => (
+                    {[...friends].sort((a, b) => {
+                       const aId = a?.friend?.id || "";
+                       const bId = b?.friend?.id || "";
+                       return (onlineIds?.has?.(bId) ? 1 : 0) - (onlineIds?.has?.(aId) ? 1 : 0);
+                    }).map(friend => (
                       <div key={friend.id} className="flex flex-col bg-black/40 rounded-[1.5rem] border border-white/5 group overflow-hidden transition-all hover:bg-black/60 hover:border-white/10">
                         
                         <div 
@@ -450,7 +473,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
                                   playSfx('click');
-                                  handleInvite(friend.friend.id); 
+                                  if (friend.friend?.id) handleInvite(friend.friend.id); 
                                 }} 
                                 className="px-4 py-2 bg-game-cyan hover:bg-white text-game-dark text-xs font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_20px_rgba(255,255,255,0.5)]"
                                 title="Send Match Invite"
@@ -462,7 +485,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                               onClick={(e) => { 
                                 e.stopPropagation(); 
                                 playSfx('click');
-                                setFriendToDelete(friend);
+                                if (friend) setFriendToDelete(friend);
                               }} 
                               className="p-2 opacity-0 group-hover:opacity-100 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl border border-red-500/20 transition-all active:scale-95"
                               title="Remove Connection"
@@ -479,21 +502,21 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                             
                             <div className="flex flex-col items-center relative z-10 w-1/3">
                               <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Matches</span>
-                              <span className="text-white font-black text-lg">{friend.friend.total_games || 0}</span>
+                              <span className="text-white font-black text-lg">{friend?.friend?.total_games || 0}</span>
                             </div>
                             <div className="w-px h-8 bg-white/10 relative z-10" />
                             <div className="flex flex-col items-center relative z-10 w-1/3">
                               <span className="text-[9px] text-game-cyan uppercase font-black tracking-widest drop-shadow-md">Accuracy</span>
                               <span className="text-game-cyan font-black text-lg drop-shadow-[0_0_5px_rgba(0,229,255,0.6)]">
-                                {friend.friend.total_games && friend.friend.total_games > 0 
-                                  ? `${Math.round(((friend.friend.total_wins || 0) / friend.friend.total_games) * 100)}%`
+                                {friend?.friend?.total_games && friend.friend.total_games > 0 
+                                  ? `${Math.round(((friend.friend?.total_wins || 0) / friend.friend.total_games) * 100)}%`
                                   : '0%'}
                               </span>
                             </div>
                             <div className="w-px h-8 bg-white/10 relative z-10" />
                             <div className="flex flex-col items-center relative z-10 w-1/3">
                               <span className="text-[9px] text-game-purple uppercase font-black tracking-widest drop-shadow-md">AI Defeated</span>
-                              <span className="text-white font-black text-lg">{friend.friend.ai_wins || 0}</span>
+                              <span className="text-white font-black text-lg">{friend?.friend?.ai_wins || 0}</span>
                             </div>
                           </div>
                         </div>
