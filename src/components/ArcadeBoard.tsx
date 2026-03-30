@@ -506,6 +506,19 @@ export function ArcadeBoard({
       
       <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-40 hover:opacity-100 transition-opacity" />
 
+      <LeaveConfirmModal
+        open={showLeaveConfirmEarly}
+        title="Abort Arena?"
+        message="Are you sure you want to exit? Your synaptic progress in this mission will be lost."
+        confirmLabel="Abort mission"
+        onCancel={() => setShowLeaveConfirmEarly(false)}
+        onConfirm={() => { 
+          setShowLeaveConfirmEarly(false); 
+          if (onLeaveEarly) onLeaveEarly(); 
+          else onLeave(); 
+        }}
+      />
+
       <ProfileModal
         open={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
