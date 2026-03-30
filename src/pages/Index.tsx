@@ -11,7 +11,7 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 import { useAIGame } from "@/hooks/useAIGame";
 import { useArcadeGame } from "@/hooks/useArcadeGame";
 import { useGameSounds } from "@/hooks/useGameSounds";
-import { ArrowLeft, Star, Users, Zap } from "lucide-react";
+import { ArrowLeft, Star, Users, Zap, Bot, UserCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -121,35 +121,81 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
 
     if (!isStarted) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 pt-24 md:pt-4 bg-game-dark relative overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-amber/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s' }} />
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 pt-24 md:pt-4 bg-[#050508] relative overflow-hidden"
+        style={{ backgroundImage: 'radial-gradient(circle at 100% 0%, rgba(251,191,36,0.02) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(251,191,36,0.01) 0%, transparent 50%)' }}
+      >
+        <div className="absolute top-[10%] left-[-10%] w-[500px] h-[500px] bg-game-amber/5 rounded-full blur-[120px] pointer-events-none animate-pulse-glow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-game-amber/5 rounded-full blur-[100px] pointer-events-none" style={{ animationDelay: '2s' }} />
 
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
-          <GlobalLogo className="hidden md:flex pointer-events-auto" />
+          <GlobalLogo className="hidden md:flex pointer-events-auto opacity-20" />
         </div>
 
         <button 
           onClick={onExit} 
-          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-amber/20 text-foreground hover:bg-game-amber/10 hover:text-game-amber hover:border-game-amber/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/10 backdrop-blur-3xl border border-game-amber/10 text-game-amber/60 hover:bg-game-amber/20 hover:text-game-amber hover:border-game-amber/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto group"
         >
-          <ArrowLeft className="w-5 h-5" /> Back
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="text-[10px] uppercase font-black tracking-widest">Back</span>
         </button>
-        <div className="max-w-md w-full p-6 md:p-10 rounded-3xl bg-card/60 backdrop-blur-xl border border-game-amber/20 shadow-[0_0_50px_rgba(251,191,36,0.15)] text-center animate-in fade-in zoom-in duration-500 relative z-10">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-3 md:mb-4 tracking-tight text-white drop-shadow-md">Play with AI</h2>
-          <p className="text-game-amber font-bold text-base md:text-lg mb-6 md:mb-8 font-medium italic opacity-80">"Challenge the mind of a machine."</p>
-          <div className="mb-6 p-4 bg-game-amber/10 border border-game-amber/20 rounded-2xl flex flex-col items-center gap-1">
-            <span className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Playing as</span>
-            <span className="text-2xl font-extrabold text-white">{playerName}</span>
-          </div>
-          <button 
-            className="w-full p-3 md:p-4 rounded-xl bg-game-amber hover:bg-game-amber/90 active:scale-[0.98] text-game-dark font-black uppercase tracking-widest text-base md:text-lg transition-all shadow-[0_0_30px_rgba(251,191,36,0.3)]"
-            onClick={() => setIsStarted(true)}
-          >
-            Launch Battle
-          </button>
+
+        {/* Play with AI Card */}
+        <div className="w-full max-w-[320px] xs:max-w-xs relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+           {/* Decorative corner elements */}
+           <div className="absolute -top-1.5 -left-1.5 w-6 h-6 border-t-2 border-l-2 border-game-amber/30 rounded-tl-lg z-20" />
+           <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 border-b-2 border-r-2 border-game-amber/30 rounded-br-lg z-20" />
+
+           <div className="relative bg-[#0a0a0f]/80 backdrop-blur-3xl rounded-[2rem] border border-white/5 shadow-[0_0_60px_rgba(0,0,0,0.8)] p-6 md:p-8 text-center overflow-hidden">
+              {/* Internal glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-game-amber/40 to-transparent blur-sm" />
+              
+              <div className="relative z-10">
+                 {/* Central Bot Intelligence Avatar */}
+                 <div className="mb-6 relative inline-block">
+                    <div className="absolute inset-0 bg-game-amber/20 blur-xl rounded-full opacity-40 animate-pulse" />
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-black/60 border border-game-amber/30 flex items-center justify-center relative z-10 shadow-[inner_0_0_20px_rgba(251,191,36,0.15)] animate-float">
+                       <Bot className="w-10 h-10 md:w-12 md:h-12 text-game-amber drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
+                       
+                       {/* Animated Scan Line */}
+                       <div className="absolute inset-x-0 top-0 h-[1px] bg-game-amber/40 animate-scanner-vertical pointer-events-none" />
+                    </div>
+                    
+                    {/* Floating circular UI rings */}
+                    <div className="absolute -inset-3 border border-game-amber/10 rounded-full animate-spin-slow opacity-30 pointer-events-none" />
+                    <div className="absolute -inset-6 border border-white/5 rounded-full animate-reverse-spin-slow opacity-20 pointer-events-none" />
+                 </div>
+
+                 <h2 className="text-3xl md:text-4xl font-black text-white mb-1 uppercase tracking-tighter drop-shadow-md">Play with AI</h2>
+                 <p className="text-game-amber font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em] mb-6 opacity-60">"Battle the mind of a machine"</p>
+
+                 {/* Bio-Sync Player Badge */}
+                 <div className="mb-8 p-4 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col items-center gap-1 transition-all hover:bg-white/[0.05] group/sync">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                       <div className="w-1 h-1 rounded-full bg-game-amber animate-pulse" />
+                       <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest group-hover/sync:text-game-amber/60 transition-colors line-clamp-1">Neural Sync Active</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <UserCircle className="w-4 h-4 text-game-amber/40" />
+                       <span className="text-lg md:text-xl font-black text-white truncate max-w-[150px]">{playerName}</span>
+                    </div>
+                 </div>
+
+                 <button 
+                   className="w-full h-14 md:h-16 rounded-xl bg-game-amber text-game-dark font-black tracking-[0.3em] text-xs md:text-sm uppercase transition-all shadow-[0_0_30px_rgba(251,191,36,0.3)] hover:shadow-[0_0_50px_rgba(251,191,36,0.5)] hover:scale-[1.02] active:scale-[0.97] relative overflow-hidden group/btn"
+                   onClick={() => setIsStarted(true)}
+                 >
+                    <div className="absolute inset-0 bg-white/20 -translate-x-[150%] skew-x-12 group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-in-out" />
+                    <span className="relative z-10">Launch Battle</span>
+                 </button>
+              </div>
+
+              {/* Decorative data scan pattern */}
+              <div className="absolute inset-0 opacity-[0.02] pointer-events-none select-none z-0" 
+                   style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, white 1px, white 2px)', backgroundSize: '100% 4px' }} 
+              />
+           </div>
         </div>
 
-        <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-0 animate-fade-in-up" />
+        <DeveloperFooter className="absolute bottom-6 left-0 right-0 z-10 opacity-30 hover:opacity-100 transition-all duration-700" />
       </div>
     );
   }
