@@ -270,25 +270,27 @@ export function ProfileModal({ open, onClose, profile, onLogout, readOnly = fals
               </div>
 
               {/* Action Footer */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-3 pt-2">
                  {isConfirmingLogout ? (
                     <div className="flex gap-2 animate-in slide-in-from-top-2">
-                       <button onClick={() => { playSfx('click'); onLogout?.(); }} className="flex-1 h-11 bg-red-500 text-white font-black rounded-xl text-xs tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all">TERMINATE SESSION</button>
-                       <button onClick={() => setIsConfirmingLogout(false)} className="flex-1 h-11 bg-white/5 text-white/50 font-black rounded-xl text-xs tracking-widest active:scale-95 transition-all">ABORT</button>
+                       <button onClick={() => { playSfx('click'); onLogout?.(); }} className="flex-1 h-12 bg-red-500 text-white font-black rounded-xl text-xs tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all">TERMINATE SESSION</button>
+                       <button onClick={() => setIsConfirmingLogout(false)} className="flex-1 h-12 bg-white/5 text-white/50 font-black rounded-xl text-xs tracking-widest active:scale-95 transition-all">ABORT</button>
                     </div>
                  ) : (
-                   <button 
-                     onClick={() => setIsConfirmingLogout(true)}
-                     className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-black text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-[0.98]"
-                   >
-                     <LogOut className="w-3.5 h-3.5" /> SECURE LOGOUT
-                   </button>
+                   !readOnly && (
+                     <button 
+                       onClick={() => setIsConfirmingLogout(true)}
+                       className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-black text-[10px] tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-[0.98]"
+                     >
+                       <LogOut className="w-3.5 h-3.5" /> SECURE LOGOUT
+                     </button>
+                   )
                  )}
                  <button 
-                   onClick={onClose} 
-                   className="w-full h-11 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white/50 font-black text-[9px] uppercase tracking-[0.2em] hover:text-white hover:bg-white/[0.06] transition-all"
+                   onClick={() => { playSfx('click'); onClose(); }} 
+                   className="w-full h-12 rounded-xl bg-white text-game-dark font-black text-[11px] uppercase tracking-[0.2em] hover:bg-white/90 transition-all shadow-lg active:scale-[0.98]"
                  >
-                   Return to Games
+                   Close Profile
                  </button>
               </div>
             </>

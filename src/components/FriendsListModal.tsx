@@ -37,6 +37,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [friendToDelete, setFriendToDelete] = useState<FriendshipData | null>(null);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -464,7 +465,7 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
                               onClick={(e) => { 
                                 e.stopPropagation(); 
                                 playSfx('click');
-                                respondToRequest(friend.id, "reject"); 
+                                setFriendToDelete(friend);
                               }} 
                               className="p-2 opacity-0 group-hover:opacity-100 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl border border-red-500/20 transition-all active:scale-95"
                               title="Remove Connection"
@@ -539,12 +540,63 @@ function FriendsListModalContent({ open, onClose, roomCode }: FriendsListProps) 
             </>
           )}
         </div>
+        <div className="mt-8 pt-6 border-t border-white/5 relative z-10 shrink-0">
+          <button 
+            onClick={() => { playSfx('click'); onClose(); }} 
+            className="w-full h-12 bg-white text-game-dark font-black rounded-xl text-xs tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg"
+          >
+            DISCONNECT NETWORK
+          </button>
+        </div>
+
         <ProfileModal 
           open={!!selectedProfile} 
           onClose={() => setSelectedProfile(null)} 
           profile={selectedProfile} 
           readOnly 
         />
+
+        {/* Delete Confirmation Modal */}
+        {friendToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-[#0a0a0f] border border-red-500/30 rounded-[2rem] p-8 shadow-[0_0_80px_rgba(239,68,68,0.15)] animate-in zoom-in-95 relative overflow-hidden text-center">
+              <div className="absolute top-[-20%] left-[-20%] w-48 h-48 bg-red-500/10 rounded-full blur-[80px]" />
+              
+              <div className="relative z-10">
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                  <Reject className="w-10 h-10 text-red-500" />
+                </div>
+                
+                <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Remove Friend?</h2>
+                <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
+                  Are you sure you want to disconnect from <strong className="text-white">{friendToDelete.friend.username}</strong>?
+                </p>
+                
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    onClick={() => {
+                      respondToRequest(friendToDelete.id, "reject");
+                      setFriendToDelete(null);
+                    }}
+                    className="w-full h-14 bg-red-500 hover:bg-red-600 text-white font-black text-lg shadow-[0_5px_25px_rgba(239,68,68,0.3)] active:scale-[0.98] transition-all uppercase tracking-widest"
+                  >
+                    Confirm Delete
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      playSfx('click');
+                      setFriendToDelete(null);
+                    }}
+                    variant="outline"
+                    className="w-full h-14 bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white font-bold transition-all active:scale-95"
+                  >
+                    Keep Friend
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

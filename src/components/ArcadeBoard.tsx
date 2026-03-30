@@ -10,6 +10,10 @@ import { GlobalLogo, DeveloperFooter } from "./Branding";
 import { LeaveConfirmModal } from "./LeaveConfirmModal";
 import { getArcadeEfficiencyScore, getArcadeRankTitle } from "@/lib/arcade-logic";
 import { getThemeClasses, GameMode } from "@/lib/theme-logic";
+import { ProfileModal } from "./ProfileModal";
+import { UserProfile } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; maxHearts: number; size?: 'sm' | 'lg' }) => {
   const isCritical = hearts === 1;
@@ -123,6 +127,22 @@ export function ArcadeBoard({
   const [showLeaveConfirmEarly, setShowLeaveConfirmEarly] = useState(false);
   const { playSfx } = useAudio();
   const theme = getThemeClasses('arcade');
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  const fetchAndShowProfile = async (targetId: string) => {
+    if (loadingProfile) return;
+    setLoadingProfile(true);
+    const { data, error } = await (supabase as any).from('profiles').select('*').eq('id', targetId).single();
+    setLoadingProfile(false);
+    
+    if (error || !data) {
+      toast.error("Could not reach player profile.");
+      return;
+    }
+    
+    setSelectedProfile(data as UserProfile);
+  };
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const currentTurnPlayer = gameState.players[gameState.currentTurnIndex];
@@ -404,8 +424,11 @@ export function ArcadeBoard({
                     player.id === playerId ? "bg-white/5 ring-1 ring-white/10" : player.isEliminated ? "bg-black/30 opacity-50 grayscale" : "bg-muted/40"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 mr-2 flex-1">
-                    <span className="font-medium truncate text-white">
+                  <div 
+                    className="flex items-center gap-2 min-w-0 mr-2 flex-1 cursor-pointer group/name"
+                    onClick={() => fetchAndShowProfile(player.id)}
+                  >
+                    <span className={`font-medium truncate transition-colors ${player.id === playerId ? "text-game-purple" : "text-white group-hover/name:text-game-purple"}`}>
                       {player.name} {player.id === playerId && "(You)"}
                     </span>
                     <div 
@@ -470,13 +493,11 @@ export function ArcadeBoard({
       
       <DeveloperFooter className="shrink-0 mt-4 mb-2 z-10 opacity-40 hover:opacity-100 transition-opacity" />
 
-      <LeaveConfirmModal
-        open={showLeaveConfirmEarly}
-        title="Quit Arcade?"
-        message="Your progress will be lost and you will return to the main menu. Are you sure?"
-        confirmLabel="Yes, Quit"
-        onCancel={() => setShowLeaveConfirmEarly(false)}
-        onConfirm={() => { if (onLeaveEarly) onLeaveEarly(); }}
+      <ProfileModal
+        open={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+        profile={selectedProfile}
+        readOnly
       />
     </div>
   );

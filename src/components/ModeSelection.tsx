@@ -159,10 +159,11 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             <div className="flex items-center gap-2 md:gap-3 bg-black/40 hover:bg-black/80 backdrop-blur-2xl px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 hover:border-game-cyan/30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(0,229,255,0.2)] transition-all duration-300 group cursor-default">
               <button 
                 onClick={() => {
-                  if (profile) {
+                  if (user) {
                     playSfx('expand');
                     setShowProfile(true);
                   } else {
+                    playSfx('click');
                     setShowAuth(true);
                   }
                 }}

@@ -9,6 +9,10 @@ import { RoomSettingsModal } from "./RoomSettingsModal";
 import { GlobalLogo, DeveloperFooter } from "./Branding";
 import { LeaveConfirmModal } from "./LeaveConfirmModal";
 import { getThemeClasses, GameMode } from "@/lib/theme-logic";
+import { ProfileModal } from "./ProfileModal";
+import { UserProfile } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // Hearts display component
 const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; maxHearts: number; size?: 'sm' | 'lg' }) => {
@@ -133,6 +137,22 @@ export function GameBoard({
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [requestRestartSent, setRequestRestartSent] = useState(false);
   const [showLeaveConfirmEarly, setShowLeaveConfirmEarly] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  const fetchAndShowProfile = async (targetId: string) => {
+    if (loadingProfile) return;
+    setLoadingProfile(true);
+    const { data, error } = await (supabase as any).from('profiles').select('*').eq('id', targetId).single();
+    setLoadingProfile(false);
+    
+    if (error || !data) {
+      toast.error("Could not reach player profile.");
+      return;
+    }
+    
+    setSelectedProfile(data as UserProfile);
+  };
 
   const myPlayer = gameState.players.find((p) => p.id === playerId);
   const currentTurnPlayer = gameState.players[gameState.currentTurnIndex];
@@ -422,15 +442,18 @@ export function GameBoard({
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
-                      className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse"}`} 
-                      title={player.isOnline !== false ? "Online" : "Offline"}
-                    />
-                    <span className={`font-medium truncate ${player.id === playerId ? theme.text : "text-white/80"}`}>
-                      {player.name} {player.id === playerId && "(you)"}
-                    </span>
-                  </div>
+                      className={`relative flex items-center gap-3 min-w-0 flex-1 cursor-pointer group/name`}
+                      onClick={() => fetchAndShowProfile(player.id)}
+                    >
+                      <div 
+                        className={`w-2 h-2 rounded-full shrink-0 ${player.isOnline !== false ? "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)] animate-pulse"}`} 
+                        title={player.isOnline !== false ? "Online" : "Offline"}
+                      />
+                      <span className={`font-medium truncate transition-colors ${player.id === playerId ? theme.text : "text-white/80 group-hover/name:text-white"}`}>
+                        {player.name} {player.id === playerId && "(you)"}
+                      </span>
+                    </div>
                   <div className="flex items-center gap-4 shrink-0">
                     {gameState.guessLimitEnabled && !player.isEliminated && (
                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${((gameState.maxGuesses || Math.ceil(Math.log2(gameState.maxRange) * (gameState.guessLimitDifficulty === 'hard' ? 1 : gameState.guessLimitDifficulty === 'medium' ? 1.5 : 2))) - player.attempts) <= 3 ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse' : 'bg-white/5 border-white/10 text-muted-foreground'}`}>
@@ -532,10 +555,11 @@ export function GameBoard({
         onSettingsChange={onUpdateSettings}
       />
 
-      <LeaveConfirmModal
-        open={showLeaveConfirmEarly}
-        onCancel={() => setShowLeaveConfirmEarly(false)}
-        onConfirm={() => { setShowLeaveConfirmEarly(false); if (onLeaveEarly) onLeaveEarly(); else onLeave(); }}
+      <ProfileModal
+        open={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+        profile={selectedProfile}
+        readOnly
       />
     </div>
   );

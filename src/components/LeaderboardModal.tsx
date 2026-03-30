@@ -6,6 +6,7 @@ import { UserProfile, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Avatar } from "./Avatar";
 import { ProfileModal } from "./ProfileModal";
+import { useAudio } from "@/contexts/AudioContext";
 
 interface LeaderboardModalProps {
   open: boolean;
@@ -16,6 +17,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
   const [tab, setTab] = useState<"pvp" | "ai" | "arcade">("pvp");
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const { user } = useAuth();
+  const { playSfx } = useAudio();
   const queryClient = useQueryClient();
 
   // Lightweight friendships fetch to check statuses
@@ -228,6 +230,15 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
               </div>
             ))
           )}
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-white/5">
+          <button 
+            onClick={() => { playSfx('click'); onClose(); }} 
+            className="w-full h-12 bg-white text-game-dark font-black rounded-xl text-xs tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg shadow-white/5"
+          >
+            CLOSE CHAMPIONS
+          </button>
         </div>
       </div>
 
