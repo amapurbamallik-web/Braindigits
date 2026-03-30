@@ -349,6 +349,19 @@ export function GameBoard({
           onConfirm={() => { setShowLeaveConfirm(false); onLeave(); }}
         />
 
+        <LeaveConfirmModal
+          open={showLeaveConfirmEarly}
+          title="Abort Battle?"
+          message="Are you sure you want to exit? Your synaptic progress in this match will be lost."
+          confirmLabel="Abort Mission"
+          onCancel={() => setShowLeaveConfirmEarly(false)}
+          onConfirm={() => { 
+            setShowLeaveConfirmEarly(false); 
+            if (onLeaveEarly) onLeaveEarly(); 
+            else onLeave(); 
+          }}
+        />
+
         <RoomSettingsModal
           open={showSettings}
           onClose={() => setShowSettings(false)}

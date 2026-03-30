@@ -273,6 +273,19 @@ export function ArcadeBoard({
           onCancel={() => setShowLeaveConfirm(false)}
           onConfirm={() => { onLeave(); }}
         />
+
+        <LeaveConfirmModal
+          open={showLeaveConfirmEarly}
+          title="Abort Arena?"
+          message="Are you sure you want to exit? Your synaptic progress in this mission will be lost."
+          confirmLabel="Abort mission"
+          onCancel={() => setShowLeaveConfirmEarly(false)}
+          onConfirm={() => { 
+            setShowLeaveConfirmEarly(false); 
+            if (onLeaveEarly) onLeaveEarly(); 
+            else onLeave(); 
+          }}
+        />
       </div>
     );
   }
