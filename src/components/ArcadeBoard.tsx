@@ -19,7 +19,7 @@ const HeartsDisplay = ({ hearts, maxHearts, size = 'sm' }: { hearts: number; max
       {Array.from({ length: maxHearts }).map((_, i) => (
         <span
           key={i}
-          className={`${iconSize} leading-none transition-all duration-300 ${
+          className={`${iconSize} leading-none transition-all duration-150 ${
             i < hearts
               ? isCritical ? 'animate-pulse' : ''
               : 'opacity-20 grayscale'
@@ -226,9 +226,9 @@ export function ArcadeBoard({
           <div className="flex gap-3">
             <button
               onClick={() => { playSfx('click'); setShowLeaveConfirm(true); }}
-              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 hover:shadow-[0_0_25px_rgba(255,255,255,0.1)] font-bold transition-all active:scale-[0.97] shadow-lg"
+              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl bg-white text-game-dark hover:bg-white/90 hover:shadow-[0_0_25px_rgba(255,255,255,0.4)] font-black transition-all active:scale-[0.97] shadow-xl"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5" />
               Back
             </button>
             <Button 
@@ -346,7 +346,7 @@ export function ArcadeBoard({
           </p>
         </div>
 
-        <div className={`rounded-xl p-4 mb-4 text-center transition-colors border relative overflow-hidden ${
+        <div className={`rounded-xl p-4 mb-4 text-center transition-colors duration-200 border relative overflow-hidden ${
             isMyTurn
               ? `${theme.bgMuted} ${theme.border} ${theme.accentGlow}`
               : "bg-muted/30 border-border/50"
@@ -378,7 +378,7 @@ export function ArcadeBoard({
                       return (
                         <div 
                           key={i} 
-                          className={`h-full flex-1 transition-all duration-500 rounded-[1px] ${
+                          className={`h-full flex-1 transition-all duration-200 rounded-[1px] ${
                             isActive 
                               ? isCritical ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : theme.primary 
                               : 'bg-transparent opacity-10'

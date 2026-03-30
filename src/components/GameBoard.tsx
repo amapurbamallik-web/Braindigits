@@ -275,9 +275,9 @@ export function GameBoard({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setShowLeaveConfirm(true)}
-              className="h-14 flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] font-bold transition-all active:scale-[0.97]"
+              className="h-14 flex items-center justify-center gap-2 rounded-xl bg-white text-game-dark hover:bg-white/90 hover:shadow-[0_0_25px_rgba(255,255,255,0.4)] font-black transition-all active:scale-[0.97] shadow-xl"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5" />
               Back
             </button>
             {isHost && (
@@ -386,7 +386,7 @@ export function GameBoard({
           </h2>
         </div>
 
-        <div className={`rounded-2xl p-4 md:p-5 mb-4 text-center transition-all duration-500 border relative overflow-hidden ${
+        <div className={`rounded-2xl p-4 md:p-5 mb-4 text-center transition-all duration-200 border relative overflow-hidden ${
             isMyTurn
               ? `${theme.bgMuted} ${theme.border} ${theme.glow}`
               : "bg-muted/30 border-border/50"

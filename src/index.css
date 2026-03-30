@@ -140,15 +140,15 @@
 }
 
 .animate-scanner-vertical {
-  animation: scanner-vertical 3s linear infinite;
+  animation: scanner-vertical 1.5s linear infinite;
 }
 
 .animate-shimmer-ultra {
-  animation: shimmer-ultra 2s ease-in-out infinite;
+  animation: shimmer-ultra 1s ease-in-out infinite;
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 4s ease-in-out infinite;
+  animation: glow-pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes float {
@@ -167,13 +167,13 @@
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 1.5s ease-in-out infinite;
 }
 
 .animate-bounce-subtle {
-  animation: bounce-subtle 2s ease-in-out infinite;
+  animation: bounce-subtle 1s ease-in-out infinite;
 }
 
 .animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
+  animation: spin-slow 4s linear infinite;
 }

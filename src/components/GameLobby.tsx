@@ -67,10 +67,10 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
           {onBack && (
             <button 
               onClick={onBack} 
-              className={`flex flex-shrink-0 items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all active:scale-95 z-50 pointer-events-auto group`}
+              className="flex flex-shrink-0 items-center gap-2 px-5 py-2.5 rounded-full bg-white text-game-dark hover:bg-white/90 shadow-[0_5px_20px_rgba(255,255,255,0.3)] transition-all active:scale-95 z-50 pointer-events-auto group font-black text-xs uppercase tracking-widest"
             >
-              <ArrowLeft className="w-5 h-5 md:w-4 md:h-4 shrink-0 group-hover:-translate-x-1 transition-transform" /> 
-              <span className="text-sm font-bold tracking-tight">Back</span>
+              <ArrowLeft className="w-4 h-4 shrink-0 group-hover:-translate-x-1 transition-transform" /> 
+              <span>Back</span>
             </button>
           )}
           <GlobalLogo className="hidden md:flex pointer-events-auto" />
@@ -158,13 +158,12 @@ export function GameLobby({ onCreateRoom, onJoinRoom, settings, onSettingsChange
             )}
             <div className="flex gap-3">
               <Button
-                variant="outline"
                 disabled={isConnecting}
                 onClick={() => {
                   setLobbyMode("menu");
                   setNameError("");
                 }}
-                className="flex-1 h-12 active:scale-[0.97] transition-transform border-border/50 disabled:opacity-50"
+                className="flex-1 h-12 bg-white text-game-dark hover:bg-white/90 font-black uppercase tracking-widest transition-all active:scale-[0.97] shadow-lg"
               >
                 Back
               </Button>

@@ -166,9 +166,9 @@ function AIWrapper({
 
         <button 
           onClick={onExit} 
-          className="absolute top-6 left-6 md:left-[22%] flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-3xl border border-white/20 text-white hover:bg-white/20 hover:border-white/40 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto group"
+          className="absolute top-6 left-6 md:left-[22%] flex items-center gap-2 px-4 py-2 rounded-full bg-white text-game-dark hover:bg-white/90 shadow-[0_5px_20px_rgba(255,255,255,0.3)] transition-all active:scale-95 z-50 pointer-events-auto group"
         >
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> <span className="text-[9px] uppercase font-black tracking-widest">Back</span>
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="text-[10px] uppercase font-black tracking-widest">Back</span>
         </button>
 
         <button 
@@ -179,7 +179,7 @@ function AIWrapper({
         </button>
 
         {/* Play with AI Card */}
-        <div className="w-full max-w-[280px] xs:max-w-xs relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full max-w-[280px] xs:max-w-xs relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-300">
            {/* Decorative corner elements */}
            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-game-amber/20 rounded-tl-lg z-20" />
            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-game-amber/20 rounded-br-lg z-20" />
@@ -395,7 +395,7 @@ function ArcadeWrapper({
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-game-purple/5 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
         <button 
           onClick={() => { playSfx('click'); setShowLevelSelect(false); }} 
-          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-purple/20 text-foreground hover:bg-game-purple/10 hover:text-game-purple shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-game-dark hover:bg-white/90 shadow-[0_5px_25px_rgba(255,255,255,0.3)] transition-all active:scale-95 z-50 pointer-events-auto font-black text-xs uppercase tracking-widest"
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
@@ -448,9 +448,9 @@ function ArcadeWrapper({
         <div className="absolute top-0 left-0 w-full p-6 md:p-10 flex justify-between items-center z-50 pointer-events-none">
           <button 
             onClick={() => { playSfx('click'); onExit(); }} 
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 text-white/40 shadow-[0_0_10px_rgba(255,255,255,0.05)] hover:bg-white/10 hover:text-white hover:border-white/30 transition-all duration-300 active:scale-90 pointer-events-auto group"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-game-dark shadow-[0_5px_25px_rgba(255,255,255,0.3)] hover:bg-white/90 transition-all duration-200 active:scale-90 pointer-events-auto group"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> <span className="font-black text-[9px] uppercase tracking-[0.25em]">Back</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> <span className="font-black text-[10px] uppercase tracking-[0.25em]">Back</span>
           </button>
           <GlobalLogo className="hidden lg:flex pointer-events-auto opacity-10 hover:opacity-50 transition-all duration-700 w-32 justify-end" />
         </div>
@@ -458,7 +458,7 @@ function ArcadeWrapper({
         {/* Digital Vanguard Selection Grid */}
         <div className="w-full max-w-lg flex flex-col items-center gap-5 relative z-10 px-4 md:px-6 mt-8">
            
-           <div className="w-full flex flex-col items-center gap-4 mb-2 animate-in fade-in slide-in-from-top-4 duration-1000">
+           <div className="w-full flex flex-col items-center gap-4 mb-2 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="w-full flex justify-center scale-[1.1] md:scale-[1.25] -translate-x-1">
                  <GlobalLogo />
               </div>

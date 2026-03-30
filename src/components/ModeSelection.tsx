@@ -206,7 +206,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           <img
             src={logoImg}
             alt="BrainDigits Logo"
-            className="w-56 h-56 mx-auto mb-4 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.15)] hover:scale-105 transition-transform duration-500"
+            className="w-56 h-56 mx-auto mb-4 object-contain object-center -translate-x-3 md:-translate-x-4 drop-shadow-[0_0_30px_rgba(0,229,255,0.15)] hover:scale-105 transition-transform duration-200"
           />
           <p className="text-muted-foreground font-medium" style={{ textWrap: "pretty" }}>
             Compete with friends or challenge the AI offline. The fastest mind wins!
