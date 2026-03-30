@@ -226,7 +226,7 @@ export function ArcadeBoard({
           <div className="flex gap-3">
             <button
               onClick={() => { playSfx('click'); setShowLeaveConfirm(true); }}
-              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] font-bold transition-all active:scale-[0.97]"
+              className="flex-1 h-14 flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 hover:shadow-[0_0_25px_rgba(255,255,255,0.1)] font-bold transition-all active:scale-[0.97] shadow-lg"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
