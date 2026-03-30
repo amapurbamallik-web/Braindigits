@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 
 export type SoundType = 'click' | 'join' | 'guess_local' | 'guess_opponent' | 'win' | 'tick' | 'timeout' | 'notification' | 'expand';
 
@@ -66,6 +66,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     try { return localStorage.getItem('bd_music') === 'true'; } catch { return false; }
   });
 
+  const isSoundRef = useRef(isSoundEnabled);
+
+  useEffect(() => {
+    isSoundRef.current = isSoundEnabled;
+  }, [isSoundEnabled]);
+
   const toggleSound = () => setIsSoundEnabled(prev => {
     const next = !prev;
     try { localStorage.setItem('bd_sound', String(next)); } catch {}
@@ -77,8 +83,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     return next;
   });
 
-  const playSfx = (type: SoundType) => {
-    if (!isSoundEnabled) return;
+  const playSfx = useCallback((type: SoundType) => {
+    if (!isSoundRef.current) return;
     
     switch(type) {
       case 'click':
@@ -123,7 +129,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         playTone(400, 'triangle', 0.05, 0.4);
         break;
     }
-  };
+  }, []);
 
   return (
     <AudioContext.Provider value={{ isSoundEnabled, toggleSound, isMusicEnabled, toggleMusic, playSfx }}>

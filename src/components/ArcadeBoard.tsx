@@ -130,11 +130,19 @@ export function ArcadeBoard({
   const currentLevel = gameState.level || 1;
   const rankTitle = getArcadeRankTitle(currentLevel);
 
+  const lastLevelRef = useRef<number>(gameState.level || 1);
+  const lastStatusRef = useRef<string>(gameState.status);
+
   useEffect(() => {
+    // Only trigger if status or level actually changed since we last handled it
+    if (gameState.status === lastStatusRef.current && gameState.level === lastLevelRef.current) {
+      return;
+    }
+
     let timeoutId: NodeJS.Timeout;
     if (gameState.status === "finished") {
       timeoutId = setTimeout(() => {
-        playSfx('timeout'); // or any game over sound, let's just use timeout for fail state
+        playSfx('timeout'); 
       }, 300);
     } else if (gameState.status === "level_complete") {
       timeoutId = setTimeout(() => {
@@ -147,8 +155,14 @@ export function ArcadeBoard({
         playSfx('notification');
       }, 300);
     }
-    return () => clearTimeout(timeoutId);
-  }, [gameState.status, playSfx]);
+
+    lastStatusRef.current = gameState.status;
+    lastLevelRef.current = gameState.level || 1;
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [gameState.status, gameState.level, playSfx]);
 
   const handleSubmitGuess = () => {
     const num = parseInt(guessInput, 10);

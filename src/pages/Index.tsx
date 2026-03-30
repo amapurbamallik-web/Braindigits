@@ -121,7 +121,7 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
 
     if (!isStarted) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-game-dark relative overflow-hidden">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 pt-24 md:pt-4 bg-game-dark relative overflow-hidden">
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-game-amber/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s' }} />
 
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-20 pointer-events-none">
@@ -130,7 +130,7 @@ function AIWrapper({ onExit, settings }: { onExit: () => void, settings: GameSet
 
         <button 
           onClick={onExit} 
-          className="absolute top-20 left-6 md:top-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-amber/20 text-foreground hover:bg-game-amber/10 hover:text-game-amber hover:border-game-amber/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-amber/20 text-foreground hover:bg-game-amber/10 hover:text-game-amber hover:border-game-amber/30 shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
@@ -288,11 +288,11 @@ function ArcadeWrapper({ onExit }: { onExit: () => void }) {
     const levels = Array.from({ length: maxUnlocked }, (_, i) => i + 1).reverse();
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 bg-[#050508] relative overflow-hidden">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 pt-24 md:pt-4 bg-[#050508] relative overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-game-purple/5 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '6s' }} />
         <button 
           onClick={() => { playSfx('click'); setShowLevelSelect(false); }} 
-          className="absolute top-20 left-6 md:top-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-purple/20 text-foreground hover:bg-game-purple/10 hover:text-game-purple shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
+          className="absolute top-6 left-6 md:left-[200px] flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-game-purple/20 text-foreground hover:bg-game-purple/10 hover:text-game-purple shadow-lg transition-all active:scale-95 z-50 pointer-events-auto"
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>

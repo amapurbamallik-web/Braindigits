@@ -20,8 +20,8 @@ export function getArcadeDifficulty(level: number): ArcadeDifficulty {
   // Formula as requested: ceil(log2(range))
   const optimalGuesses = Math.ceil(Math.log2(maxRange));
 
-  // Timer: 2.5 seconds per optimal guess for a more playable experience
-  const timerDuration = optimalGuesses * 2500;
+  // Timer: 1.5 seconds per optimal guess (rounded up)
+  const timerDuration = Math.ceil(optimalGuesses * 1.5) * 1000;
 
   // Lives: capped at maximum of 3
   const maxLives = Math.min(3, Math.ceil(optimalGuesses / 2));
