@@ -87,7 +87,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
 
           <div className="w-full space-y-4 px-4 md:px-6 relative">
             <Button
-              onClick={() => { playSfx('click'); setShowAuth(true); }}
+              onClick={() => setShowAuth(true)}
               className="w-full h-14 text-lg font-bold bg-game-cyan hover:bg-game-cyan/90 text-game-dark shadow-[0_0_20px_rgba(0,229,255,0.3)] rounded-2xl transition-all active:scale-[0.98]"
             >
               <UserCircle className="mr-2 h-6 w-6" />
@@ -95,7 +95,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             </Button>
             
             <Button
-              onClick={() => { playSfx('click'); setIsGuest(true); }}
+              onClick={() => setIsGuest(true)}
               variant="outline"
               className="w-full h-14 text-lg font-bold bg-black/30 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white rounded-2xl transition-all active:scale-[0.98]"
             >
@@ -126,7 +126,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           {user && (
             <div className="relative">
               <Button
-                onClick={() => { playSfx('click'); setShowFriends(true); }}
+                onClick={() => setShowFriends(true)}
                 variant="outline"
                 size="icon"
                 className="rounded-full w-10 h-10 md:w-11 md:h-11 bg-card/50 backdrop-blur-md border border-game-purple/30 text-game-purple hover:bg-game-purple hover:text-white shadow-[0_0_15px_rgba(171,71,188,0.2)] transition-all active:scale-95"
@@ -143,7 +143,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           )}
 
           <Button
-            onClick={() => { playSfx('click'); setShowLeaderboard(true); }}
+            onClick={() => setShowLeaderboard(true)}
             variant="outline"
             size="icon"
             className="rounded-full w-10 h-10 md:w-11 md:h-11 bg-card/50 backdrop-blur-md border border-game-amber/30 text-game-amber hover:bg-game-amber hover:text-game-dark shadow-[0_0_15px_rgba(251,191,36,0.2)] transition-all active:scale-95"
@@ -188,7 +188,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             </div>
           ) : (
             <Button
-              onClick={() => { playSfx('click'); setShowAuth(true); }}
+              onClick={() => setShowAuth(true)}
               variant="outline"
               className="rounded-full bg-game-cyan/10 backdrop-blur-md border border-game-cyan/30 text-game-cyan hover:bg-game-cyan hover:text-game-dark shadow-[0_0_15px_rgba(0,229,255,0.2)] font-bold transition-all active:scale-95 px-4 md:px-6 h-10 md:h-11"
             >
@@ -217,7 +217,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button
-            onClick={() => { playSfx('click'); onSelectMode("arcade"); }}
+            onClick={() => onSelectMode("arcade")}
             className="w-full h-16 text-lg font-black tracking-[0.2em] active:scale-[0.97] transition-all bg-gradient-to-r from-game-purple via-fuchsia-500 to-pink-500 hover:shadow-[0_0_40px_rgba(217,70,239,0.5)] text-white shadow-[0_0_20px_rgba(171,71,188,0.4)] border border-white/20 relative overflow-hidden group rounded-2xl"
             size="lg"
           >
@@ -227,7 +227,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           </Button>
 
           <Button
-            onClick={() => { playSfx('click'); onSelectMode("friends"); }}
+            onClick={() => onSelectMode("friends")}
             className="w-full h-14 text-base font-semibold active:scale-[0.97] transition-all bg-game-cyan hover:bg-game-cyan/90 text-game-dark shadow-[0_0_15px_rgba(0,229,255,0.2)] rounded-2xl"
             size="lg"
           >
@@ -236,7 +236,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           </Button>
           
           <Button
-            onClick={() => { playSfx('click'); onSelectMode("ai"); }}
+            onClick={() => onSelectMode("ai")}
             className="w-full h-14 text-base font-bold active:scale-[0.97] transition-all bg-game-amber hover:bg-game-amber/90 text-game-dark shadow-[0_0_15px_rgba(251,191,36,0.3)] rounded-2xl"
             size="lg"
           >
@@ -245,7 +245,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
           </Button>
 
           <Button
-            onClick={() => { playSfx('click'); setShowInvite(true); }}
+            onClick={() => setShowInvite(true)}
             variant="outline"
             size="lg"
             className="w-full h-12 text-sm font-bold border-dashed border-game-amber/30 text-game-amber/80 hover:bg-game-amber/10 hover:border-game-amber/60 hover:text-game-amber active:scale-[0.97] transition-all"
@@ -256,7 +256,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
 
           <div className="pt-1 flex gap-2 md:gap-3">
             <Button
-              onClick={() => { playSfx('click'); setShowInstructions(true); }}
+              onClick={() => setShowInstructions(true)}
               variant="ghost"
               className="flex-1 h-11 md:h-12 text-xs md:text-sm text-muted-foreground hover:text-game-amber hover:bg-game-amber/10 px-2 rounded-xl"
             >
@@ -265,7 +265,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
             </Button>
             
             <Button
-              onClick={() => { playSfx('click'); setShowSettings(true); }}
+              onClick={() => setShowSettings(true)}
               variant="ghost"
               className="flex-1 h-11 md:h-12 text-xs md:text-sm text-muted-foreground hover:text-white hover:bg-white/10 px-2 rounded-xl"
             >
@@ -309,7 +309,7 @@ export function ModeSelection({ onSelectMode, settings, onSettingsChange }: Mode
                 <p><strong className="text-white">Win!</strong> — First player to guess correctly wins the round and earns a point. Play multiple rounds!</p>
               </div>
             </div>
-            <Button onClick={() => { playSfx('click'); setShowInstructions(false); }} className="w-full mt-6 h-11 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-semibold active:scale-[0.97] transition-transform rounded-xl">
+            <Button onClick={() => setShowInstructions(false)} className="w-full mt-6 h-11 bg-game-cyan hover:bg-game-cyan/90 text-game-dark font-semibold active:scale-[0.97] transition-transform rounded-xl">
               Got it!
             </Button>
           </div>

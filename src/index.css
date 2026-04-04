@@ -74,6 +74,17 @@
     display: flex;
     flex-direction: column;
   }
+
+  /* ─── Eliminate 300ms tap delay on touch devices ─── */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ─── Pre-promote interactive elements to their own compositing layer ─── */
+  button {
+    will-change: transform;
+  }
 }
 
 @layer utilities {

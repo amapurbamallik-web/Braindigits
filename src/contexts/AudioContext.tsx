@@ -28,12 +28,8 @@ const getAudioContext = () => {
 const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, delaySec = 0) => {
   try {
     const ctx = getAudioContext();
-    if (!ctx) return;
+    if (!ctx || ctx.state !== 'running') return;
     
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -57,6 +53,21 @@ const playTone = (freq: number, type: OscillatorType, dur: number, vol = 0.1, de
     console.warn("Audio Context failed", e);
   }
 };
+
+// Pre-warm the AudioContext on first interaction so it's in 'running' state
+// when users start clicking buttons — avoids async resume() lag
+const prewarmAudio = () => {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+  document.removeEventListener('click', prewarmAudio, true);
+  document.removeEventListener('keydown', prewarmAudio, true);
+  document.removeEventListener('touchstart', prewarmAudio, true);
+};
+document.addEventListener('click', prewarmAudio, true);
+document.addEventListener('keydown', prewarmAudio, true);
+document.addEventListener('touchstart', prewarmAudio, true);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
